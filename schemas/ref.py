@@ -9,8 +9,8 @@ class UserRefInfo(BaseModel):
     credits_for_ref: int = 50
     credits_for_paid_ref: int = 1000
 
-    paid_refs_percent: int = 0
-    paid_refs_balance: int = 0
+    paid_refs_percent: int | None = None
+    paid_refs_balance: int | None = None
     special_ref_on_moderation: bool = False
 
 

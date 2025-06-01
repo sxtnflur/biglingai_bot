@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     BOT_TOKEN: str
+    BOT_WEBHOOK_URL: str
+    BOT_WEBHOOK_ENDPOINT: str
 
     START_CREDITS: int = 10
     ADMIN_ID: int = 1304563494

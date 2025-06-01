@@ -2,12 +2,16 @@ from uuid import UUID
 
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from schemas.chatting import MistakeSubGroup
-from services.ai.base import Choice
+from services.ai.base import Choice, ResChoice
 from services.mistakes_service import MistakeSchema, MistakeGroupSchema
 from .base import BaseKeyboards
 from ..callbacks.mistakes import MistakesListCallback, MistakesListByDialogCallback, MistakeCallback, \
-    MistakeGroupListCallback, TrainMistakeGroupAnswerCallback, TrainMistakeGroupCallback, TrainMistakesDialogCallback
+    MistakeGroupListCallback, TrainMistakeGroupAnswerCallback, TrainMistakeGroupCallback, TrainMistakesDialogCallback, \
+    DeleteMistakeCallback
 import textwrap
+
+from ..texts.base import BaseTexts
+from ..texts.mistakes import MistakesTexts
 
 
 class MistakesKeyboards:
@@ -24,7 +28,7 @@ class MistakesKeyboards:
                 callback_data=MistakeGroupListCallback(group=m.group.value).pack()
             ),
             limit=limit, objs=groups,
-            additional_btns=[[InlineKeyboardButton(text='Назад', callback_data='start')]]
+            additional_btns=[[InlineKeyboardButton(text=BaseTexts.BACK, callback_data='start')]]
         )
 
     @staticmethod
@@ -53,18 +57,18 @@ class MistakesKeyboards:
         if has_mistakes:
             return InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(
-                    text='Отработать ошибки',
+                    text=MistakesTexts.WORK_OUT_MISTAKE_BUTTON,
                     callback_data=MistakesListCallback().pack()  # MistakesListByDialogCallback(dialog_uuid=dialog_uuid.__str__()).pack()
                 )],
                 [InlineKeyboardButton(
-                    text='Начать новый диалог',
+                    text=MistakesTexts.START_NEW_DIALOG,
                     callback_data='chatting_mode_start'
                 )]
             ])
         else:
             return InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(
-                    text='Начать новый диалог',
+                    text=MistakesTexts.START_NEW_DIALOG,
                     callback_data='chatting_mode_start'
                 )]
             ])
@@ -89,11 +93,11 @@ class MistakesKeyboards:
             pag_btn_additional_kwargs=dict(group=group.value),
             additional_btns=[[
                 InlineKeyboardButton(
-                    text='Отработать ошибки',
+                    text=MistakesTexts.WORK_OUT_MISTAKE_BUTTON,
                     callback_data=TrainMistakeGroupCallback(group=group.value).pack()
                 )
             ], [InlineKeyboardButton(
-                text='Назад',
+                text=BaseTexts.BACK,
                 callback_data=MistakesListCallback().pack()
             )]]
         )
@@ -118,34 +122,61 @@ class MistakesKeyboards:
             pag_btn_additional_kwargs=dict(dialog_uuid=dialog_uuid),
             additional_btns=[[
                 InlineKeyboardButton(
-                    text='Отработать ошибки',
+                    text=MistakesTexts.WORK_OUT_MISTAKE_BUTTON,
                     callback_data=TrainMistakesDialogCallback(dialog_uuid=dialog_uuid).pack()
                 )
             ], [InlineKeyboardButton(
-                text='Назад',
+                text=BaseTexts.BACK,
                 callback_data=MistakesListCallback().pack()
             )]]
         )
 
     @staticmethod
-    def mistake(group: MistakeSubGroup):
-        return BaseKeyboards.create_kb_back(
+    def mistake(group: MistakeSubGroup, mistake_id: int):
+        btn_back = BaseKeyboards.create_btn_back(
             callback_data=MistakeGroupListCallback(group=group.value).pack()
         )
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text=MistakesTexts.DELETE_BUTTON, callback_data=DeleteMistakeCallback(pre=True, mistake_id=mistake_id).pack()
+            )],
+            [btn_back]
+        ])
 
     @staticmethod
-    def train_mistake_choice(choices: list[Choice], mistake_id: int, group: MistakeSubGroup) -> InlineKeyboardMarkup:
+    def delete_mistake(mistake_id: int):
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text=MistakesTexts.I_WORKED_OUT_MISTAKE_REASON_DELETE_BUTTON,
+                callback_data=DeleteMistakeCallback(
+                    pre=False, mistake_id=mistake_id,
+                    is_worked_out=True
+                ).pack()
+            )],
+            [InlineKeyboardButton(
+                text=MistakesTexts.ERROR_MISTAKE_REASON_DELETE_BUTTON,
+                callback_data=DeleteMistakeCallback(
+                    pre=False, mistake_id=mistake_id,
+                    really_delete=True
+                ).pack()
+            )],
+            [BaseKeyboards.create_btn_back(MistakeCallback(id=mistake_id).pack())]
+        ])
+
+
+    @staticmethod
+    def train_mistake_choice(choices: list[ResChoice], mistake_id: int, group: MistakeSubGroup) -> InlineKeyboardMarkup:
         btns = BaseKeyboards.create_list_kb(
             get_btn=lambda x: InlineKeyboardButton(
-                text=x.text,
+                text=str(x.id) + '️⃣ ',
                 callback_data=TrainMistakeGroupAnswerCallback(
                     is_right=x.is_right, mistake_id=mistake_id,
                     group=group.value
                 ).pack()
             ),
             objs=choices,
-            width=2
+            width=4
         )
         return InlineKeyboardMarkup(inline_keyboard=btns + [[InlineKeyboardButton(
-            text='Выйти', callback_data=MistakeGroupListCallback(group=group.value).pack()
+            text=MistakesTexts.EXIT_BUTTON, callback_data=MistakeGroupListCallback(group=group.value).pack()
         )]])

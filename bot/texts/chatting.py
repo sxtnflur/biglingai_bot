@@ -30,6 +30,9 @@ class ChattingTexts:
 Хочешь начать новый диалог?
 '''
 
+    START_BUTTON = 'Начали!'
+    END_BUTTON = 'Закончить предварительно'
+
     @staticmethod
     def ai_answer(answer: TalkingResponse) -> str:
         if not answer.is_right_lang:
@@ -38,9 +41,9 @@ class ChattingTexts:
         def prepare_mistake(mistake: Mistake):
             print(f'{mistake=}')
             return (
-                f"❌ {mistake.incorrect} → <b>{mistake.correct}</b>\n"
-                f"ℹ {mistake.explanation}\n"
-                f"📌 Пример: " + ' | '.join(mistake.example)
+                    f"❌ <s>{mistake.incorrect}</s> → <b>{mistake.correct}</b>\n"
+                    f"ℹ {mistake.explanation}\n"
+                    f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
             )
             # return str(mistake.model_dump())
             # return f'<b>{MistakeSubGroup(mistake.subgroup).subgroup_label.title()} ({MistakeSubGroup(mistake.subgroup).group.label.title()}):</b> {mistake.explanation}'
@@ -49,7 +52,7 @@ class ChattingTexts:
         if answer.result.indications:
             text += (
                 '<b>Замечания:</b>\n{}\n\n'.format(
-                    '- ' + '\n\n- '.join(list(map(prepare_mistake, answer.result.indications)))
+                    '\n\n'.join(list(map(prepare_mistake, answer.result.indications)))
                 ) + '\n<b>Продолжим общение:</b>\n')
         return text + answer.result.answer.text
 
@@ -57,9 +60,9 @@ class ChattingTexts:
     def result_dialog(count_messages: int, mistakes: list[MistakeSchema] | None = None) -> str:
         def prepare_mistake(mistake: MistakeSchema):
             return (
-                    f"❌ {mistake.incorrect} → <b>{mistake.correct}</b>\n"
-                    f"ℹ {mistake.explanation}\n"
-                    f"📌 Пример: " + ' | '.join(mistake.example)
+                    f"<s>{mistake.incorrect}</s> → <b>{mistake.correct}</b>\n"
+                    # f"ℹ {mistake.explanation}\n"
+                    # f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
             )
             # return f'<b>{mistake.subgroup.subgroup_label.title()} ({mistake.subgroup.group.label}):</b> {mistake.comment}'
 

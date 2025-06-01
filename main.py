@@ -1,6 +1,7 @@
 import asyncio
 
 from aiogram.client.default import DefaultBotProperties
+from aiogram.types import BotCommand
 from config import settings
 from bot.handlers import __routers__
 from aiogram import Bot, Dispatcher
@@ -10,7 +11,18 @@ dp = Dispatcher()
 dp.include_routers(*__routers__)
 
 
+async def onstartup(bot: Bot):
+    await bot.set_my_commands(
+        commands=[
+            BotCommand(
+                command='start', description='Перезапустить бота'
+            )
+        ]
+    )
+
+
 async def start_polling():
+    await onstartup(bot)
     await dp.start_polling(bot)
 
 

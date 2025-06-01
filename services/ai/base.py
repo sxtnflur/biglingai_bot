@@ -14,9 +14,21 @@ class Choice(BaseModel):
     is_right: bool
 
 
+class ResChoice(Choice):
+    id: int
+
+
 class TaskWithVariants(BaseModel):
     task: str
     choices: list[Choice]
+
+    @property
+    def enumerated_choices(self):
+        if not hasattr(self, '_enumerated_choices'):
+            self._enumerated_choices = [
+            ResChoice.model_validate(choice.model_dump() | {'id': i}) for i, choice in enumerate(self.choices, 1)
+        ]
+        return self._enumerated_choices
 
 
 class ReadingRating(BaseModel):
@@ -38,7 +50,7 @@ class LangLearningAIService:
 Ты - бот для изучения английского языка.
 Придумай для пользователя задание на знание английского языка с вариантами ответа.
 Пояснения к заданию давай на русском языке.
-Правильный ответ должен быть один
+Правильный ответ должен быть один.
 '''.strip(),
             model=self.model
         )

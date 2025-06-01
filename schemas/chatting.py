@@ -148,38 +148,17 @@ class TalkingResponse(BaseModel):
     is_right_lang: bool
 
 
-
-# class MistakeGroup(Enum):
-#     grammar = auto()
-#     vocabulary = auto()
-#     spelling = auto()
-#     punctuation = auto()
-#     coherence = auto()
-#     style = auto()
-#
-#     @property
-#     def label(self) -> str:
-#         labels = {
-#             MistakeGroup.grammar: 'Грамматика',
-#             MistakeGroup.vocabulary: 'Словарный запас',
-#             MistakeGroup.spelling: 'Орфография',
-#             MistakeGroup.punctuation: 'Пунктуация',
-#             MistakeGroup.coherence: 'Связность',
-#             MistakeGroup.style: 'Стиль'
-#         }
-#         return labels.get(self)
+class MistakeGroup(StrEnum):
+    grammar = auto()
+    vocabulary = auto()
+    syntax = auto()
+    spelling = auto()
 
 
 class Mistake(BaseModel):
-    group: str
-    subgroup: str
+    group: MistakeGroup
+    subgroup: MistakeSubGroup
     incorrect: str
     correct: str
     explanation: str
     example: list[str]
-
-
-class RateDialog(BaseModel):
-    comment: str
-    grammatical_accurancy: int
-    mistakes: list[Mistake] | None = None

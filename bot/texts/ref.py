@@ -75,6 +75,11 @@ class RefTexts:
 Пользователь {} подал заявку на участие в специальной реферальной программе    
 '''
 
+    SPECIAL_REF_BUTTON = '✴ Специальная программа'
+    ALL_STATISTIC_BUTTON = '📊 Смотреть всю статистику'
+    DELETE_THIS_MESSAGE = '🗑 Удалить это сообщение'
+    SEND_ORDER_SPECIAL_REF_BUTTON = 'Подать заявку'
+
     @staticmethod
     def main(
         credits_for_ref: int, credits_for_paid_ref: int,

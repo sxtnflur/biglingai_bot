@@ -1,8 +1,10 @@
+import random
+
 from aiogram import Router, F
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, ReactionTypeUnion, ReactionTypeEmoji
 from bot.keyboards.credits import CreditsKeyboards
 from bot.keyboards.mistakes import MistakesKeyboards
 from bot.middlewares import DatabaseMiddleware
@@ -15,6 +17,7 @@ from services.mistakes_service import MistakesService
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
+from bot import utils
 
 router = Router()
 router.message.middleware(DatabaseMiddleware())
@@ -23,6 +26,13 @@ router.callback_query.middleware(DatabaseMiddleware())
 
 class ChattingStates(StatesGroup):
     chatting = State()
+
+CHAT_TYPE = f'text-chatting'
+
+
+def get_reaction(count_mistakes: int) -> ReactionTypeUnion | None:
+    if not count_mistakes:
+        return utils.get_reaction_by_level(is_positive=True)
 
 
 @router.callback_query(F.data == 'choose_mode:chatting')
@@ -37,9 +47,8 @@ async def start_chatting(
         return
 
     await state.clear()
-    await call.message.delete_reply_markup()
 
-    await call.message.answer(
+    await call.message.edit_text(
         ChattingTexts.INSTRUCTION,
         reply_markup=ChattingKeyboards.start()
     )
@@ -71,13 +80,22 @@ async def chatting_mode_start(
     await state.set_state(ChattingStates.chatting)
     await state.update_data(dialog_uuid=uuid.uuid4())
 
+    await chat_history_service.clear_history(
+        user_id=call.from_user.id,
+        chat_type=CHAT_TYPE
+    )
+    await chat_history_service.add_message_to_history(
+        message={'role': 'assistant', 'content': answer.result.answer.text},
+        user_id=call.from_user.id,
+        chat_type=CHAT_TYPE
+    )
+
 
 @router.message(ChattingStates.chatting, F.text)
 async def chatting(
     message: Message, state: FSMContext,
     db: AsyncSession
 ):
-    CHAT_TYPE = 'text-chatting'
     messages = await chat_history_service.get_history(
         user_id=message.from_user.id, chat_type=CHAT_TYPE
     )
@@ -107,6 +125,8 @@ async def chatting(
         user_id=message.from_user.id,
         chat_type=CHAT_TYPE
     )
+    dialog_uuid = None
+
     if answer.result.indications:
         dialog_uuid = await state.get_value('dialog_uuid')
         await MistakesService(db).save_mistakes(
@@ -116,9 +136,15 @@ async def chatting(
             user_message=message.text
         )
 
+    reaction = get_reaction(len(answer.result.indications) if answer.result.indications else 0)
+    if reaction:
+        await message.react([reaction], is_big=True)
+
     if len(messages) >= 8:
-        dialog_uuid = await state.get_value('dialog_uuid')
         await state.clear()
+        if not dialog_uuid:
+            dialog_uuid = await state.get_value('dialog_uuid')
+
         print(f'{dialog_uuid=}')
         mistakes = await MistakesService(db).get_mistakes(
             user_id=message.from_user.id,

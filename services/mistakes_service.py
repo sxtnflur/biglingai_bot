@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from schemas.chatting import MistakeSubGroup, Mistake as MistakeRes, GroupEnum
-from sqlalchemy import insert, select, func, text
+from sqlalchemy import insert, select, func, text, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import Mistake
 
@@ -87,7 +87,7 @@ class MistakesService:
     ) -> list[MistakeSchema]:
         stmt = (
             select(Mistake)
-            .filter(Mistake.user_id == user_id)
+            .filter(Mistake.user_id == user_id, Mistake.is_worked_out.is_(False))
             .offset(offset).limit(limit)
             .order_by(Mistake.id)
         )
@@ -106,7 +106,7 @@ class MistakesService:
     ) -> list[MistakeGroupSchema]:
         stmt = (
             select(Mistake.subgroup, func.count().label('count'))
-            .filter(Mistake.user_id == user_id)
+            .filter(Mistake.user_id == user_id, Mistake.is_worked_out.is_(False))
             .offset(offset).limit(limit)
             .group_by(Mistake.subgroup)
             .order_by(text('count'))
@@ -134,7 +134,8 @@ class MistakesService:
     ) -> MistakeSchema | None:
         stmt = (
             select(Mistake)
-            .filter(Mistake.user_id == user_id)
+            .filter(Mistake.user_id == user_id,
+                    Mistake.is_worked_out.is_(False))
         )
         if by_group:
             stmt = stmt.filter(Mistake.subgroup == by_group.value)
@@ -144,3 +145,28 @@ class MistakesService:
         if not obj:
             return
         return MistakeSchema.model_validate(obj)
+
+    async def delete_mistake(self, mistake_id: int, user_id: int) -> MistakeSchema:
+        mistake = await self.__db.scalar(
+            delete(Mistake).filter(Mistake.id == mistake_id, Mistake.user_id == user_id)
+            .returning(Mistake)
+        )
+        return MistakeSchema.model_validate(mistake)
+
+    async def mark_mistake_as_worked_out(self, mistake_id: int, user_id: int) -> MistakeSchema:
+        mistake = await self.__db.scalar(
+            update(Mistake)
+            .filter(Mistake.id == mistake_id, Mistake.user_id == user_id)
+            .values(is_worked_out=True)
+            .returning(Mistake)
+        )
+        return MistakeSchema.model_validate(mistake)
+
+    async def count_worked_out_mistakes(self, user_id: int) -> int:
+        return await self.__db.scalar(
+            select(func.count())
+            .filter(
+                Mistake.user_id == user_id,
+                Mistake.is_worked_out.is_(True)
+            )
+        )

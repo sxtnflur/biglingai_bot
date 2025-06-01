@@ -18,4 +18,5 @@ class Mistake(Base):
     explanation: Mapped[str] = mapped_column(TEXT)
     dialog_uuid: Mapped[UUID]
     user_message: Mapped[str | None] = mapped_column(TEXT, nullable=True)
+    is_worked_out: Mapped[bool] = mapped_column(server_default='False')
     date: Mapped[CreatedAt]

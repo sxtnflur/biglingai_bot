@@ -46,3 +46,10 @@ class TrainMistakeGroupAnswerCallback(CallbackData, prefix='train-mistake-group-
             )
         except:
             return
+
+
+class DeleteMistakeCallback(CallbackData, prefix='delete-mistake'):
+    pre: bool = True
+    is_worked_out: bool = False
+    really_delete: bool = False
+    mistake_id: int

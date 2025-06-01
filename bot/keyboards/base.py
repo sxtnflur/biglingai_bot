@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from bot.callbacks.base import ScrollingCallback
 from bot.callbacks.mistakes import MistakesListCallback
+from bot.texts.base import BaseTexts
 from typing_extensions import Callable, TypeVar
 
 T = TypeVar('T')
@@ -10,10 +11,10 @@ class BaseKeyboards:
     @staticmethod
     def main_menu():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text='✏ Чаттинг', callback_data='choose_mode:chatting')],
-            [InlineKeyboardButton(text='Мои ошибки', callback_data=MistakesListCallback().pack())],
-            [InlineKeyboardButton(text='Подписки/Кредиты', callback_data='credits_subs')],
-            [InlineKeyboardButton(text='Реферальная программа', callback_data='ref')]
+            [InlineKeyboardButton(text=BaseTexts.CHATTING_BUTTON, callback_data='choose_mode:chatting'),
+            InlineKeyboardButton(text=BaseTexts.MY_MISTAKES_BUTTON, callback_data=MistakesListCallback().pack())],
+            [InlineKeyboardButton(text=BaseTexts.SUB_AND_CREDITS_BUTTON, callback_data='credits_subs'),
+            InlineKeyboardButton(text=BaseTexts.REF_BUTTON, callback_data='ref')]
         ])
 
     @staticmethod
@@ -45,32 +46,31 @@ class BaseKeyboards:
         if page > 0:
             if pag_btn_additional_kwargs:
                 pag_btns.append(InlineKeyboardButton(
-                    text='<',
+                    text=BaseTexts.PAGINATION_LEFT,
                     callback_data=callback_data(page=page-1, limit=limit, **pag_btn_additional_kwargs).pack()
                 ))
             else:
                 pag_btns.append(InlineKeyboardButton(
-                    text='<', callback_data=callback_data(page=page-1, limit=limit).pack()
+                    text=BaseTexts.PAGINATION_LEFT, callback_data=callback_data(page=page-1, limit=limit).pack()
                 ))
         if len(objs) == limit:
             if pag_btn_additional_kwargs:
                 pag_btns.append(InlineKeyboardButton(
-                    text='>',
+                    text=BaseTexts.PAGINATION_RIGHT,
                     callback_data=callback_data(page=page + 1, limit=limit, **pag_btn_additional_kwargs).pack()
                 ))
             else:
                 pag_btns.append(InlineKeyboardButton(
-                    text='>', callback_data=callback_data(page=page+1, limit=limit).pack()
+                    text=BaseTexts.PAGINATION_RIGHT, callback_data=callback_data(page=page+1, limit=limit).pack()
                 ))
         if additional_btns:
             inl_kb += additional_btns
 
         return InlineKeyboardMarkup(inline_keyboard=inl_kb)
 
-
     @staticmethod
     def create_btn_back(callback_data: str):
-        return InlineKeyboardButton(text='Назад', callback_data=callback_data)
+        return InlineKeyboardButton(text=BaseTexts.BACK, callback_data=callback_data)
 
     @staticmethod
     def create_kb_back(callback_data: str):

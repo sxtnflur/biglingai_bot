@@ -24,7 +24,8 @@ async def start_ref(
 ):
     ref_info = await RefService(db).process_ref_payload(
         command.args, bot=message.bot, user_full_name=message.from_user.full_name,
-        user_username=message.from_user.username
+        user_username=message.from_user.username,
+        user_id=message.from_user.id
     )
     print(f'{ref_info=}')
     invited_by_id = ref_info.invited_by_id if ref_info else None

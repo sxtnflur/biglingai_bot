@@ -26,12 +26,16 @@ class RefService:
         )
 
     async def process_ref_payload(self, payload: str, bot: Bot, user_full_name: str,
-                                  user_username: str | None) -> DecodedRefInfo | None:
+                                  user_username: str | None, user_id: int) -> DecodedRefInfo | None:
         try:
             ref_user_id = re.findall('ref(\d+)', payload)
             print(f'{ref_user_id=}')
             if ref_user_id and len(ref_user_id) == 1:
                 ref_user_id = int(ref_user_id[0])
+
+                if ref_user_id == user_id:
+                    return
+
                 new_credits = await self.__db.scalar(
                     update(models.User)
                     .filter(models.User.id == ref_user_id)

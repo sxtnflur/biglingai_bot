@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     REDIS_URL: str
     OPENAI_KEY: str
     OPENAI_BASE_URL: str
+    OPENAI_MODEL: str
 
     DATABASE_URL: str
 

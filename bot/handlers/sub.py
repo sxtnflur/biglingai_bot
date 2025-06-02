@@ -3,6 +3,7 @@ from datetime import timedelta
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, User as TgUser
 from database import models
+from depends import payment_factory
 from services.payments_service import PaymentsService
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,10 +56,14 @@ async def buy_credits(
     call: CallbackQuery, callback_data: BuyCreditsCallback
 ):
     credits_pack = SubsService().get_credits_pack_by_id(callback_data.id)
-
+    pay_url = await payment_factory.create_payment(
+        payment_method='yookassa',
+        amount=credits_pack.price,
+        description='Покупка {} кредитов'.format(credits_pack.credits)
+    )
     await call.message.edit_text(
         SubsTexts.buy_credits_pack(credits_pack),
-        reply_markup=SubsKeyboards.test_pay_for_credits(credits_pack.id)
+        reply_markup=SubsKeyboards.pay(pay_url, 'credits')
     )
 
 
@@ -67,9 +72,14 @@ async def buy_sub(
     call: CallbackQuery, callback_data: BuySubCallback
 ):
     sub = SubsService().get_sub(callback_data.id)
+    pay_url = await payment_factory.create_payment(
+        payment_method='yookassa',
+        amount=sub.price,
+        description='Покупка подписки'
+    )
     await call.message.edit_text(
         SubsTexts.buy_sub(sub),
-        reply_markup=SubsKeyboards.test_pay_for_sub(sub.id)
+        reply_markup=SubsKeyboards.pay(pay_url, 'subs')
     )
 
 

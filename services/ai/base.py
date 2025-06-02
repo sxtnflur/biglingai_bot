@@ -1,4 +1,5 @@
 import json
+import random
 from enum import Enum, auto
 
 from openai import AsyncOpenAI
@@ -6,7 +7,8 @@ from openai.types.chat import ChatCompletionMessageParam
 from services.ai.openai_base import OpenAIService
 from pydantic import BaseModel
 from typing_extensions import Literal, TypedDict, Union
-from schemas.chatting import TalkingResponse, AnswerTalking, AnswerTalkingResult, AnswerTalkingIndications, AIAnswer
+from schemas.chatting import TalkingResponse, AnswerTalking, AnswerTalkingResult, AnswerTalkingIndications, AIAnswer, \
+    DialogType
 
 
 class Choice(BaseModel):
@@ -70,6 +72,8 @@ class LangLearningAIService:
     async def send_text_talking(
         self,
         user_text: str,
+        theme: str,
+        dialog_type: DialogType = DialogType.SMALL_TALK,
         user_lang_level: Literal['A1', 'A2', 'A3'] = 'A1',
         messages: list[ChatCompletionMessageParam] | None = None,
         response_type: Literal['text'] = 'text'
@@ -134,15 +138,17 @@ Communicate with the user on any topic in English within the user level.
 The user's level of language proficiency: {}
 Don't correct the user's mistakes if they write something incorrectly.
 In "is_right_lang" return false if the user is not speaking to you in English.
-In "is_right_lang" write your answer. If is_right_lang=True, then the answer must be
+In "is_right_lang" write your answer. If is_right_lang=True, then the answer must be.
+In "end_talking" set true if the dialog should be completed.
 '''.strip().format(user_lang_level)
         )
         resp_main_dialog = await openai_main_dialog.send_text_get_schema(
             prompt=user_text,
             messages=[
                          {'role': 'user',
-                          'content': "My English proficiency level is A1. Please keep this in mind when communicating with me. Let's talk about something in English. Just please don't fix my mistakes, because I really don't like it."},
-                         {'role': 'assistant', 'content': 'Okay! What you want to talk about?'}
+                          'content': f"My English proficiency level is {user_lang_level}. Please keep this in mind when communicating with me. Let's talk about something in English. Just please don't fix my mistakes, because I really don't like it."},
+                         {'role': 'assistant', 'content': 'Okay! What you want to talk about?'},
+                         {'role': 'user', 'content': dialog_type.prompt(theme=theme)}
                      ] + (messages or []),
             schema=AnswerTalking,
             temperature=0.7
@@ -176,7 +182,8 @@ In "is_right_lang" write your answer. If is_right_lang=True, then the answer mus
                 answer=AIAnswer(text=resp_main_dialog.answer),
                 indications=mistakes
             )
-            return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang)
+            return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang,
+                                   end_talking=resp_main_dialog.end_talking)
         raise ValueError('Такого respose_type нет: {}'.format(response_type))
 
     async def send_voice_talking(

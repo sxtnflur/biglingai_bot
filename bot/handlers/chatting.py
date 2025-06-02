@@ -5,6 +5,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery, Message, ReactionTypeUnion, ReactionTypeEmoji
+from bot.callbacks.chatting import SelectChattingTypeCallback
 from bot.keyboards.credits import CreditsKeyboards
 from bot.keyboards.mistakes import MistakesKeyboards
 from bot.middlewares import DatabaseMiddleware
@@ -13,6 +14,7 @@ from bot.texts.chatting import ChattingTexts
 from bot.keyboards.chatting import ChattingKeyboards
 from depends import langlearning_openai_service, chat_history_service
 from exceptions import CreditsOverException
+from schemas.chatting import DialogType
 from services.mistakes_service import MistakesService
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,13 +52,14 @@ async def start_chatting(
 
     await call.message.edit_text(
         ChattingTexts.INSTRUCTION,
-        reply_markup=ChattingKeyboards.start()
+        reply_markup=ChattingKeyboards.select_chatting_type()
     )
 
 
-@router.callback_query(F.data == 'chatting_mode_start')
+@router.callback_query(SelectChattingTypeCallback.filter())
 async def chatting_mode_start(
-    call: CallbackQuery, state: FSMContext, db: AsyncSession
+    call: CallbackQuery, state: FSMContext, db: AsyncSession,
+    callback_data: SelectChattingTypeCallback
 ):
     if not await UsersService(db).do_paid_action(call.from_user.id, credits=1):
         await call.message.answer(
@@ -66,19 +69,23 @@ async def chatting_mode_start(
         return
 
     await state.clear()
+    dialog_type = DialogType(callback_data.type)
+    theme = dialog_type.random_theme
     answer = await langlearning_openai_service.send_text_talking(
-        'Choose a topic yourself and start this dialog!',
-        response_type='text'
+        'Hello!', theme=theme, dialog_type=dialog_type, response_type='text'
     )
     try:
-        await call.message.delete_reply_markup()
+        await call.message.edit_text(
+            text=call.message.text + '\n{}\n<i>{}</i>'.format(ChattingTexts.dialog_type_label(dialog_type), theme),
+            reply_markup=None
+        )
     except: pass
     await call.message.answer(
         ChattingTexts.ai_answer(answer),
         reply_markup=ChattingKeyboards.ai_answer()
     )
     await state.set_state(ChattingStates.chatting)
-    await state.update_data(dialog_uuid=uuid.uuid4())
+    await state.update_data(dialog_uuid=uuid.uuid4(), dialog_type=callback_data.type, theme=theme)
 
     await chat_history_service.clear_history(
         user_id=call.from_user.id,
@@ -99,9 +106,16 @@ async def chatting(
     messages = await chat_history_service.get_history(
         user_id=message.from_user.id, chat_type=CHAT_TYPE
     )
+    data = await state.get_data()
+
+    dialog_type = data.get('dialog_type')
+    dialog_type = DialogType(dialog_type)
+    theme = data.get('theme')
 
     answer = await langlearning_openai_service.send_text_talking(
         message.text,
+        dialog_type=dialog_type,
+        theme=theme,
         messages=messages,
         response_type='text'
     )
@@ -140,7 +154,7 @@ async def chatting(
     if reaction:
         await message.react([reaction], is_big=True)
 
-    if len(messages) >= 8:
+    if answer.end_talking:
         await state.clear()
         if not dialog_uuid:
             dialog_uuid = await state.get_value('dialog_uuid')

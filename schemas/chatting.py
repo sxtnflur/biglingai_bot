@@ -1,4 +1,5 @@
 from enum import Enum, auto, StrEnum
+import random
 
 from pydantic import BaseModel
 
@@ -132,6 +133,7 @@ class MistakeSubGroup(StrEnum):
 class AnswerTalking(BaseModel):
     answer: str
     is_right_lang: bool = True
+    end_talking: bool = False
 
 
 class AnswerTalkingIndications(BaseModel):
@@ -146,6 +148,7 @@ class AnswerTalkingResult(BaseModel):
 class TalkingResponse(BaseModel):
     result: AnswerTalkingResult | None = None
     is_right_lang: bool
+    end_talking: bool
 
 
 class MistakeGroup(StrEnum):
@@ -162,3 +165,142 @@ class Mistake(BaseModel):
     correct: str
     explanation: str
     example: list[str]
+
+
+class DialogType(StrEnum):
+    SMALL_TALK = auto()
+    LONG_TALK = auto()
+    ROLE_PLAY = auto()
+    DEBATE = auto()
+    STORY = auto()
+    NEWS = auto()
+    CULTURE = auto()
+
+    def prompt(self, theme: str) -> str:
+        return dialog_types_prompts[self].format(theme=theme)
+
+    @property
+    def themes(self) -> list[str]:
+        return dialog_types_themes[self]
+
+    @property
+    def random_theme(self) -> str:
+        return random.choice(self.themes)
+
+    @property
+    def label(self) -> str:
+        labels = {
+            DialogType.SMALL_TALK: 'Small Talk',
+            DialogType.LONG_TALK: 'Long Talk',
+            DialogType.ROLE_PLAY: 'Ролевая игра',
+            DialogType.STORY: 'История',
+            DialogType.NEWS: 'Новости',
+            DialogType.DEBATE: 'Дебаты',
+            DialogType.CULTURE: 'Культура'
+        }
+        return labels[self]
+
+
+
+dialog_types_prompts = {
+    DialogType.SMALL_TALK: "Keep conversation short (3-5 exchanges). Current theme: {theme}",
+    DialogType.LONG_TALK: "Ask follow-up questions to continue topic: {theme}",
+    DialogType.ROLE_PLAY: "Have a role-playing dialogue on the topic: {theme}",
+    DialogType.DEBATE: "Take opposite position on: {theme}",
+    DialogType.STORY: "Build story together. Correct mistakes subtly. Theme: {themen}",
+    DialogType.NEWS: "Discuss this news: {theme}. Ask user's opinion.",
+    DialogType.CULTURE: "Explain cultural aspect: {theme}. Give examples."
+}
+
+dialog_types_themes = {
+    DialogType.SMALL_TALK: [
+        "Weather",
+        "Food preferences",
+        "Weekend plans",
+        "Hobbies",
+        "Current mood",
+        "Favorite music",
+        "Pets",
+        "Travel experiences",
+        "Movies/TV shows",
+        "Sports"
+    ],
+
+    DialogType.LONG_TALK: [
+        "Work-life balance",
+        "Cultural differences",
+        "Personal goals",
+        "Technology impact",
+        "Education system",
+        "Environmental issues",
+        "Future predictions",
+        "Social media influence",
+        "Book recommendations",
+        "Life philosophies"
+    ],
+
+    DialogType.ROLE_PLAY: [
+        "Restaurant ordering",
+        "Hotel check-in",
+        "Job interview",
+        "Doctor appointment",
+        "Airport security",
+        "Store return",
+        "Bank loan application",
+        "Car rental",
+        "Tourist asking directions",
+        "Neighbor complaint"
+    ],
+
+    DialogType.DEBATE: [
+        "Remote work vs office",
+        "Social media: pros and cons",
+        "Uniforms in schools",
+        "Space exploration funding",
+        "Gaming addiction",
+        "Universal basic income",
+        "Animal testing",
+        "Censorship in art",
+        "Gun control laws",
+        "Capital punishment"
+    ],
+
+    DialogType.STORY: [
+        "Mystery in old mansion",
+        "Alien first contact",
+        "Time travel mishap",
+        "Zombie apocalypse",
+        "Superhero origin",
+        "Haunted vacation",
+        "Robot rebellion",
+        "Lost civilization",
+        "Secret agent mission",
+        "Magical school adventure"
+    ],
+
+    DialogType.NEWS: [
+        "Breakthrough in medicine",
+        "New tech gadget release",
+        "Climate change report",
+        "Sports championship results",
+        "Political election updates",
+        "Celebrity culture analysis",
+        "Space mission news",
+        "Economic trends",
+        "Wildlife conservation",
+        "AI development"
+    ],
+
+    DialogType.CULTURE: [
+        "Holiday traditions",
+        "Business etiquette",
+        "Dating customs",
+        "Superstitions",
+        "Idioms explained",
+        "Gestures meanings",
+        "Traditional foods",
+        "Festivals worldwide",
+        "Work culture differences",
+        "Family structures"
+    ]
+}

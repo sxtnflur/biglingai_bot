@@ -17,5 +17,8 @@ class Settings(BaseSettings):
     START_CREDITS: int = 10
     ADMIN_ID: int = 1304563494
 
+    YOOKASSA_API_KEY: str
+    YOOKASSA_SHOP_ID: int
+
 
 settings = Settings(_env_file='.env')

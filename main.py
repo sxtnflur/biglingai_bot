@@ -16,6 +16,7 @@ dp.include_routers(*__routers__)
 
 
 async def onstartup(bot: Bot):
+    await bot.delete_webhook()
     await bot.set_my_commands(
         commands=[
             BotCommand(

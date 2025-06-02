@@ -53,7 +53,7 @@ class SubsKeyboards:
     def pay(pay_url: str, credits_or_subs: Literal['credits', 'subs']):
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text='Оплата', callback_data='-'
+                text='Оплата', url=pay_url
             )],
             [InlineKeyboardButton(
                 text='Назад', callback_data='credits' if credits_or_subs == 'credits' else 'subs'

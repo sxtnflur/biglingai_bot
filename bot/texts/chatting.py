@@ -1,15 +1,15 @@
 from services.ai.base import TalkingResponse
-from schemas.chatting import Mistake, MistakeSubGroup
+from schemas.chatting import Mistake, MistakeSubGroup, DialogType
 from services.mistakes_service import MistakeSchema
 
 
 class ChattingTexts:
     INSTRUCTION = '''
-Как только ты нажмешь "Начали!", я начну с тобой общаться на английском.
+Как только ты нажмешь на один из режимов, я начну с тобой общаться на английском.
 Ты должен поддерживать наш диалог. После каждого сообщения я буду указывать на твои ошибки,
 а в конце дам тебе оценку.
 
-Ну что, начали?
+Выбери режим общения:
 '''
 
     RESULT_DIALOG_WITH_MISTAKES = '''
@@ -76,3 +76,16 @@ class ChattingTexts:
             return ChattingTexts.RESULT_DIALOG_WITHOUT_MISTAKES.format(
                 count_messages=count_messages
             )
+
+    @staticmethod
+    def dialog_type_label(dialog_type: DialogType) -> str:
+        labels = {
+            DialogType.SMALL_TALK: '💬 Small Talk (Короткие диалоги)',
+            DialogType.LONG_TALK: '🗣️ Deep Talk (Глубокий разговор)',
+            DialogType.ROLE_PLAY: '🎭 Role Play (Ролевая игра)',
+            DialogType.STORY: '📖 Story Time (Совместная история)',
+            DialogType.NEWS: '📰 News Discussion (Новости)',
+            DialogType.DEBATE: '⚖️ Debate Club (Дебаты)',
+            DialogType.CULTURE: '🌍 Cultural Dive (Культура)'
+        }
+        return labels[dialog_type]

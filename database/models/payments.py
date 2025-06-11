@@ -18,7 +18,7 @@ class Payment(Base):
     order_id: Mapped[str | None]
     user_id: Mapped[int] = mapped_column(BIGINT)
     amount: Mapped[int]
-    type: Mapped[PaymentType]
+    sub_id: Mapped[int]
     created_at: Mapped[CreatedAt]
     paid_at: Mapped[datetime | None]
     test: Mapped[bool]

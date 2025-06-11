@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request, BackgroundTasks
 
 from config import settings
 from bot.handlers import __routers__
+from api.routers import __routers__ as api_routers
 
 
 bot = Bot(token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
@@ -40,8 +41,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Webhook API", lifespan=lifespan,
-    openapi_url=None, docs_url=None, redoc_url=None
+    # openapi_url=None, docs_url=None, redoc_url=None
 )
+for router in api_routers:
+    app.include_router(router)
 
 
 async def feed_update(update: types.Update):

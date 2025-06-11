@@ -14,11 +14,9 @@ class PaymentsService:
         user_tid: int,
         amount: int,
         type: models.PaymentType,
-        bot: Bot,
         order_id: str | None = None,
         test: bool = True
     ) -> None:
-        await RefService(self.__db).on_user_paid(user_tid, amount, bot=bot)
         await self.__db.execute(
             insert(models.Payment)
             .values(
@@ -28,10 +26,15 @@ class PaymentsService:
         )
 
     async def mark_as_paid(
-        self, order_id: str
-    ) -> None:
-        await self.__db.execute(
+        self, order_id: str, bot: Bot
+    ) -> models.Payment:
+        payment: models.Payment | None = await self.__db.scalar(
             update(models.Payment)
             .filter(models.Payment.order_id == order_id)
             .values(paid_at=func.now())
+            .returning(models.Payment)
         )
+        if not payment:
+            raise Exception('Платеж "{}" не найден'.format(order_id))
+        await RefService(self.__db).on_user_paid(payment.user_id, payment.amount, bot=bot)
+        return payment

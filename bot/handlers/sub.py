@@ -3,6 +3,7 @@ from datetime import timedelta
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, User as TgUser
 from database import models
+from database.models import PaymentType
 from depends import payment_factory
 from services.payments_service import PaymentsService
 from services.users_service import UsersService
@@ -53,33 +54,45 @@ async def subs(
 
 @router.callback_query(BuyCreditsCallback.filter())
 async def buy_credits(
-    call: CallbackQuery, callback_data: BuyCreditsCallback
+    call: CallbackQuery, callback_data: BuyCreditsCallback, db: AsyncSession
 ):
     credits_pack = SubsService().get_credits_pack_by_id(callback_data.id)
-    pay_url = await payment_factory.create_payment(
+    pay_data = await payment_factory.create_payment(
         payment_method='yookassa',
         amount=credits_pack.price,
         description='Покупка {} кредитов'.format(credits_pack.credits)
     )
+    await PaymentsService(db).save_payment(
+        user_tid=call.from_user.id,
+        amount=credits_pack.price,
+        type=PaymentType.credits,
+        order_id=pay_data.id
+    )
     await call.message.edit_text(
         SubsTexts.buy_credits_pack(credits_pack),
-        reply_markup=SubsKeyboards.pay(pay_url, 'credits')
+        reply_markup=SubsKeyboards.pay(pay_data.url, 'credits')
     )
 
 
 @router.callback_query(BuySubCallback.filter())
 async def buy_sub(
-    call: CallbackQuery, callback_data: BuySubCallback
+    call: CallbackQuery, callback_data: BuySubCallback, db: AsyncSession
 ):
     sub = SubsService().get_sub(callback_data.id)
-    pay_url = await payment_factory.create_payment(
+    pay_data = await payment_factory.create_payment(
         payment_method='yookassa',
         amount=sub.price,
         description='Покупка подписки'
     )
+    await PaymentsService(db).save_payment(
+        user_tid=call.from_user.id,
+        amount=sub.price,
+        order_id=pay_data.id,
+        type=PaymentType.sub
+    )
     await call.message.edit_text(
         SubsTexts.buy_sub(sub),
-        reply_markup=SubsKeyboards.pay(pay_url, 'subs')
+        reply_markup=SubsKeyboards.pay(pay_data.url, 'subs')
     )
 
 
@@ -89,7 +102,7 @@ async def test_buy_credits(
     db: AsyncSession
 ):
     await give_credits(
-        callback_data.id, user=call.from_user, db=db
+        order_id='-', credits_pack_id=callback_data.id, user=call.from_user, db=db
     )
 
 
@@ -100,18 +113,18 @@ async def test_buy_sub(
     db: AsyncSession
 ):
     await give_sub(
-        callback_data.id, user=call.from_user, db=db
+        order_id='-', sub_id=callback_data.id, user=call.from_user, db=db
     )
 
 
-async def give_credits(credits_pack_id: int, user: TgUser, db: AsyncSession):
+async def give_credits(order_id: str, credits_pack_id: int, user: TgUser, db: AsyncSession):
     credits_pack = SubsService().get_credits_pack_by_id(credits_pack_id)
     user_credits = await UsersService(db).update_user_credits(
         user.id, credits=credits_pack.credits, action='up'
     )
-    await PaymentsService(db).save_payment(
-        user_tid=user.id, amount=credits_pack.price, type=models.PaymentType.credits,
-        bot=user.bot
+    payment = await PaymentsService(db).mark_as_paid(
+        user_tid=user.id, amount=credits_pack.price,
+        bot=user.bot, order_id=order_id
     )
     await user.bot.send_message(
         user.id,
@@ -126,12 +139,12 @@ async def give_credits(credits_pack_id: int, user: TgUser, db: AsyncSession):
     )
 
 
-async def give_sub(sub_id: int, user: TgUser, db: AsyncSession):
+async def give_sub(order_id: str, sub_id: int, user: TgUser, db: AsyncSession):
     sub = SubsService().get_sub(sub_id)
     sub_end = await UsersService(db).give_sub(user_tid=user.id, td=timedelta(days=sub.days))
-    await PaymentsService(db).save_payment(
-        user_tid=user.id, amount=sub.price, type=models.PaymentType.sub,
-        bot=user.bot
+    await PaymentsService(db).mark_as_paid(
+        user_tid=user.id, amount=sub.price,
+        bot=user.bot, order_id=order_id
     )
     await user.bot.send_message(
         user.id,

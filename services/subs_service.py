@@ -21,13 +21,13 @@ class SubsService:
     def get_subs(self):
         return [
             Sub(
-                id=1, name='Турист', days=7, price=100
+                id=1, name='Турист', days=1, price=49
             ),
             Sub(
-                id=2, name='Лингвист', days=30, price=1000
+                id=2, name='Лингвист', days=30, price=199
             ),
             Sub(
-                id=4, name='Носитель', days=365, price=5000
+                id=4, name='Носитель', days=90, price=499
             )
         ]
 

@@ -45,7 +45,7 @@ class SubsKeyboards:
             width=1
         )
         return InlineKeyboardMarkup(inline_keyboard=inl_kb + [[InlineKeyboardButton(
-            text='Назад', callback_data='credits_subs'
+            text='Назад', callback_data='start'
         )]])
 
 

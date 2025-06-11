@@ -50,7 +50,8 @@ class PaymentsService:
                 (and_(
                     models.User.sub_end.isnot(None),
                     models.User.sub_end >= func.now()
-                ), models.User.sub_end + timedelta(days=sub.days))
+                ), models.User.sub_end + timedelta(days=sub.days)),
+                else_=func.now() + timedelta(days=sub.days)
             ))
             .returning(models.User.sub_end)
         )

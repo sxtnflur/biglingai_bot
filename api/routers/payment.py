@@ -32,13 +32,15 @@ async def process_pay(order_id: str, db: AsyncSession):
     )
     await bot.send_message(
         chat_id=payment.user.id,
-        text='Оплата прошла успешно!\nВаша подписка окончится: {}'
-        .format(payment.sub_end.strftime('%H:%M %d.%m.%Y'))
+        text='✅ Оплата прошла успешно!\nВаша подписка окончится: {}'
+        .format(payment.sub_end.strftime('%H:%M %d.%m.%Y')),
+        parse_mode='HTML'
     )
     await bot.send_message(
         chat_id=payment.user.id,
         text=BaseTexts.start(payment.user.first_name, payment.user.credits, payment.sub_end),
-        reply_markup=BaseKeyboards.main_menu()
+        reply_markup=BaseKeyboards.main_menu(),
+        parse_mode='HTML'
     )
     await db.commit()
 

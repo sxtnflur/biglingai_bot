@@ -5,7 +5,7 @@ class BaseTexts:
     START = '''
 Привет, {}! Готов изучать английский?
 
-{}
+{}{}
 
 <b>Обучение:</b>
 <code>✏ Чаттинг</code> - <i>Общайся с ИИ текстом на английском и получай обратную связь</i>
@@ -30,6 +30,9 @@ class BaseTexts:
 
     @staticmethod
     def start(first_name: str, credits: int = 0, sub_end: datetime | None = None):
-        return BaseTexts.START.format(first_name,
+        return BaseTexts.START.format(
+            first_name,
+            '\nТебе доступно <code>{}</code> бесплатных использований.\n'
+            '<i>(-1 за каждое сообщение в чаттинге/задание в ошибках/генерацию в переводчике и т.д.)</i>' if credits else '',
             '\n' + BaseTexts.SUB.format(sub_end.strftime('%H:%M %d.%m.%Y')) if sub_end else ''
         )

@@ -24,10 +24,10 @@ class SubsService:
                 id=1, name='Турист', days=1, price=49
             ),
             Sub(
-                id=2, name='Лингвист', days=30, price=199
+                id=2, name='Лингвист', days=30, price=190
             ),
             Sub(
-                id=4, name='Носитель', days=90, price=499
+                id=4, name='Носитель', days=90, price=490
             )
         ]
 

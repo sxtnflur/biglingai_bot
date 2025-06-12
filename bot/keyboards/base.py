@@ -11,7 +11,8 @@ class BaseKeyboards:
     @staticmethod
     def main_menu():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=BaseTexts.CHATTING_BUTTON, callback_data='choose_mode:chatting')],
+            [InlineKeyboardButton(text=BaseTexts.CHATTING_BUTTON, callback_data='choose_mode:chatting'),
+             InlineKeyboardButton(text=BaseTexts.DICTIONARY_BUTTON, callback_data='dictionary')],
             [InlineKeyboardButton(text=BaseTexts.MY_MISTAKES_BUTTON, callback_data=MistakesListCallback().pack()),
              InlineKeyboardButton(text=BaseTexts.TRANSLATOR_BUTTON, callback_data='translator')],
             [InlineKeyboardButton(text=BaseTexts.SUBS_BUTTON, callback_data='subs'),

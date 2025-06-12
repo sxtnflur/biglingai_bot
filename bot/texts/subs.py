@@ -29,7 +29,7 @@ class SubsTexts:
 
 Если возникнут проблемы, обращайтесь сюда: @sheggy_love
 '''
-    I_WANT_MORE_BUTTON = 'Хочу еще!'
+    I_WANT_MORE_BUTTON = 'Посмотреть подписки'
 
     @staticmethod
     def buy_credits_pack(credits_pack: CreditsPack):

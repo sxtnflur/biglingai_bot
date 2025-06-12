@@ -18,11 +18,13 @@ class BaseTexts:
 '''.strip()
     SUB = '<b>Подписка закончится:</b> <code>{}</code>'
 
-    CREDITS_OVER = 'У тебя не хватает кредитов. Пополни их, чтобы продолжить'
+    CREDITS_OVER = 'Похоже у тебя нет подписки, необходимой для этого действия. ' \
+                   'Оформи её, чтобы полноценно пользоваться ботом:'
     PAGINATION_LEFT = '◀️'
     PAGINATION_RIGHT = '▶️'
     BACK = '⏪ Назад'
     CHATTING_BUTTON = '✏ Чаттинг'
+    DICTIONARY_BUTTON = '📖 Словарь'
     MY_MISTAKES_BUTTON = '🔴 Ошибки'
     TRANSLATOR_BUTTON = '🔄 Переводчик'
     SUBS_BUTTON = '🕝 Подписки'

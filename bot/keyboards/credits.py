@@ -9,7 +9,7 @@ class CreditsKeyboards:
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
                 text=SubsTexts.I_WANT_MORE_BUTTON,
-                callback_data='credits_subs'
+                callback_data='subs'
             )],
             [InlineKeyboardButton(
                 text=BaseTexts.BACK,

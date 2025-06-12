@@ -86,7 +86,7 @@ RETURNING credits, sub_end
         except DatabaseError:
             raise CreditsOverException
 
-    async def do_paid_action(self, user_tid: int, credits: int) -> bool:
+    async def do_paid_action(self, user_tid: int, credits: int = 1) -> bool:
         has_sub = await self.__db.scalar(
             select(exists().where(
                 User.id == user_tid,

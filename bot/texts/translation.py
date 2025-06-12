@@ -6,3 +6,13 @@ class TranslationTexts:
 
 Введи текст и получи перевод:    
 '''
+
+    @staticmethod
+    def show_translation(orig_word: str, translated_word: str):
+        return '''    
+<b>Ваш текст:</b>
+<blockquote>{}</blockquote>
+---------------------------
+<b>Перевод:</b>
+<blockquote>{}</blockquote>
+'''.format(orig_word, translated_word)

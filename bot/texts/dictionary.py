@@ -1,0 +1,61 @@
+from schemas.dictionary import DictionaryWord
+
+
+class DictionaryTexts:
+    MAIN = '''
+<b>Это словарь</b>
+
+Пополняй свой словарь словами и тренируйся на них
+
+<code>➕ Добавить</code> - <i>Узнай все способы добавить слово в словарь</i>
+<code>🔁 Тренировка</code> - <i>Тренируй свой словарный запас по своему словарю</i>
+'''
+    HOW_TO_ADD_WORD_INSTRUCTION = '''
+<b>Есть несколько способов добавить слово в словарь:</b>
+
+<b>1.</b> Переслать сообщение с одним словом и выбрать <code>Добавить в словарь</code>
+<b>2.</b> Переслать сообщение с одним словом и написать <code>В словарь</code>
+<b>3.</b> Отправить в бота слово и выбрать "Добавить в словарь"
+<b>4.</b> В разделе <code>📖 Словарь -> 🔁 Тренировка</code> если у тебя нет своих слов или они закончились, мы добавим тебе свое
+'''
+
+
+    @staticmethod
+    def what_do_with_your_text(text: str):
+        return '<b>Что вы хотите сделать {}❓</b>\n<blockquote>{}</blockquote>'.format(
+            'с этим словом' if len(text.split()) == 1 else 'с этой фразой', text.strip())
+
+    @staticmethod
+    def word_is_added_to_dict(word_data: DictionaryWord):
+        return '''
+✅ <b>Слово добавлено в словарь!</b>
+
+<blockquote>{word_data.word}</blockquote> -> <blockquote>{word_data.ru_word}</blockquote>
+'''.format(word_data=word_data)
+
+    @staticmethod
+    def word_remember_card(word_data: DictionaryWord):
+        return '''
+ℹ <b>Постарайся запомнить перевод слова:</b>
+<i>Перед нажатием на перевод слова попробуй подумать над ним самостоятельно!</i>
+
+<blockquote>{}</blockquote>
+
+<b>Перевод:</b> <span class="tg-spoiler">{}</span>
+'''.format(word_data.word, word_data.ru_word)
+
+    @staticmethod
+    def word_remember_task(word: str):
+        return '✍ <b>Введи перевод слова:</b>\n<blockquote>{word}</blockquote>'.format(word=word)
+
+    @staticmethod
+    def train_word_success(ru_word: str):
+        return '✅ <b>Все верно! Перевод:</b> <blockquote>{}</blockquote>'.format(ru_word)
+
+    @staticmethod
+    def train_word_wrong(ru_word: str):
+        return '❌ <b>Увы, неверно! Правильный перевод:</b> <blockquote>{}</blockquote>'.format(ru_word)
+
+    @staticmethod
+    def word_can_be_marked_as_worked(word: str):
+        return '👏 Похоже, вы запомнили слово <blockquote>{}</blockquote>\n\nПереместим его в "Отработанные"?'.format(word)

@@ -26,6 +26,16 @@ class DictionaryWordWithUserInfo(BaseModel):
     user_info: UserWord | None = None
 
 
+class UserDictionaryWord(BaseModel):
+    learning_rate: int
+    can_be_mark_as_worked: bool
+    is_worked: bool
+    word: DictionaryWord
+
+    class Config: from_attributes = True
+
+
+
 class AIGeneratedDictionaryWord(BaseModel):
     word: AddDictionaryWord | None = None
     is_en_word: bool = True

@@ -80,12 +80,12 @@ class ChattingTexts:
     @staticmethod
     def dialog_type_label(dialog_type: DialogType) -> str:
         labels = {
-            DialogType.SMALL_TALK: '💬 Small Talk (Короткие диалоги)',
-            DialogType.LONG_TALK: '🗣️ Deep Talk (Глубокий разговор)',
-            DialogType.ROLE_PLAY: '🎭 Role Play (Ролевая игра)',
-            DialogType.STORY: '📖 Story Time (Совместная история)',
-            DialogType.NEWS: '📰 News Discussion (Новости)',
-            DialogType.DEBATE: '⚖️ Debate Club (Дебаты)',
-            DialogType.CULTURE: '🌍 Cultural Dive (Культура)'
+            DialogType.SMALL_TALK: '💬 Короткие диалоги',
+            DialogType.LONG_TALK: '🗣️ Глубокий разговор',
+            DialogType.ROLE_PLAY: '🎭 Ролевая игра',
+            DialogType.STORY: '📖 Совместная история',
+            DialogType.NEWS: '📰 Новости',
+            DialogType.DEBATE: '⚖ Дебаты',
+            DialogType.CULTURE: '🌍 Культура'
         }
         return labels[dialog_type]

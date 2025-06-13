@@ -1,4 +1,4 @@
-from schemas.dictionary import DictionaryWord
+from schemas.dictionary import DictionaryWord, UserDictionaryWord
 
 
 class DictionaryTexts:
@@ -7,15 +7,16 @@ class DictionaryTexts:
 
 Пополняй свой словарь словами и тренируйся на них
 
-<code>➕ Добавить</code> - <i>Узнай все способы добавить слово в словарь</i>
+<code>👁️</code> - <i>Посмотри свои слова в словаре</i>
+<code>➕</code> - <i>Узнай все способы добавить слово в словарь</i>
 <code>🔁 Тренировка</code> - <i>Тренируй свой словарный запас по своему словарю</i>
 '''
     HOW_TO_ADD_WORD_INSTRUCTION = '''
 <b>Есть несколько способов добавить слово в словарь:</b>
 
-<b>1.</b> Переслать сообщение с одним словом и выбрать <code>Добавить в словарь</code>
-<b>2.</b> Переслать сообщение с одним словом и написать <code>В словарь</code>
-<b>3.</b> Отправить в бота слово и выбрать "Добавить в словарь"
+<b>1.</b> Отправить этому боту слово и выбрать "Добавить в словарь"
+<b>2.</b> Переслать сообщение с одним словом и выбрать <code>Добавить в словарь</code>
+<b>3.</b> Переслать сообщение с одним словом и написать <code>В словарь</code>
 <b>4.</b> В разделе <code>📖 Словарь -> 🔁 Тренировка</code> если у тебя нет своих слов или они закончились, мы добавим тебе свое
 '''
 
@@ -59,3 +60,31 @@ class DictionaryTexts:
     @staticmethod
     def word_can_be_marked_as_worked(word: str):
         return '👏 Похоже, вы запомнили слово <blockquote>{}</blockquote>\n\nПереместим его в "Отработанные"?'.format(word)
+
+    @staticmethod
+    def dict_words_list(user_words: list[UserDictionaryWord]):
+        def get_level_circle(learning_rate: int, can_be_worked: bool):
+            if learning_rate <= 1:
+                return '🔴'
+            elif learning_rate <= 5:
+                return '🟠'
+            elif learning_rate < 10:
+                return '🟡'
+            else:
+                return '🟢'
+        for uw in user_words:
+            print(f'{uw.learning_rate=}')
+
+        words_texts = '\n'.join([
+            f'• <code>{uw.word.word}</code>    ➡    <code>{uw.word.ru_word}</code> ' \
+            f'{get_level_circle(uw.learning_rate, uw.can_be_mark_as_worked)}'.ljust(33)
+            for uw in user_words
+        ])
+        return '''
+<i>🔴 - Только начал запоминать
+🟠 - Смог перевести несколько раз
+🟡 - Почти запомнил
+🟢 - Знаю</i>
+
+{}        
+'''.format(words_texts)

@@ -22,13 +22,16 @@ async def start_ref(
     state: FSMContext,
     db: AsyncSession
 ):
-    ref_info = await RefService(db).process_ref_payload(
-        command.args, bot=message.bot, user_full_name=message.from_user.full_name,
-        user_username=message.from_user.username,
-        user_id=message.from_user.id
-    )
-    print(f'{ref_info=}')
-    invited_by_id = ref_info.invited_by_id if ref_info else None
+    invited_by_id = None
+    if not await UsersService(db).check_if_user_exists(message.from_user.id):
+        ref_info = await RefService(db).process_ref_payload(
+            command.args, bot=message.bot, user_full_name=message.from_user.full_name,
+            user_username=message.from_user.username,
+            user_id=message.from_user.id
+        )
+        print(f'{ref_info=}')
+        invited_by_id = ref_info.invited_by_id if ref_info else None
+
     user = await UsersService(db).add_user_from_tguser(
         message.from_user, invited_by_id=invited_by_id,
         start_credits=(settings.START_CREDITS or 0)

@@ -1,10 +1,13 @@
 from config import settings
 from database import models
 from openai import AsyncOpenAI
-from schemas.dictionary import DictionaryWord, AIGeneratedDictionaryWord, DictionaryWordWithUserInfo, UserWord
+from schemas.dictionary import DictionaryWord, AIGeneratedDictionaryWord, DictionaryWordWithUserInfo, UserWord, \
+    UserDictionaryWord
 from services import OpenAIService
-from sqlalchemy import select, insert, func, update
+from sqlalchemy import select, insert, func, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from typing_extensions import Literal
 
 
 class DictionaryService:
@@ -162,3 +165,50 @@ class DictionaryService:
             )
             .values(is_worked=True)
         )
+
+    async def count_user_dictionary_words(
+        self, user_id: int, db: AsyncSession
+    ) -> int:
+        return await db.scalar(
+            select(func.count())
+            .select_from(models.UserDictionaryWord)
+            .filter(models.UserDictionaryWord.user_id == user_id)
+        )
+
+    async def get_user_dictionary_words(
+        self, user_id: int, db: AsyncSession,
+        offset: int = 0, limit: int = 10,
+        order_by: Literal['alphabet'] = 'alphabet',
+        order_asc: bool = True
+    ) -> list[UserDictionaryWord]:
+        print(f'{order_by=}')
+        stmt = (
+            select(models.UserDictionaryWord)
+            .options(
+                selectinload(models.UserDictionaryWord.word)
+            )
+            .join(models.UserDictionaryWord.word)
+            .filter(
+                models.UserDictionaryWord.user_id == user_id,
+
+            )
+        )
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+        if order_by:
+            order_by_field = None
+            if order_by == 'alphabet':
+                order_by_field = models.DictionaryWord.word
+            elif order_by == 'learning_rate':
+                order_by_field = models.UserDictionaryWord.learning_rate
+
+            if order_by_field:
+                if order_asc:
+                    stmt = stmt.order_by(order_by_field.asc())
+                else:
+                    stmt = stmt.order_by(order_by_field.desc())
+
+        objs = await db.scalars(stmt)
+        return list(map(UserDictionaryWord.model_validate, objs))

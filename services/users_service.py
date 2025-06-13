@@ -62,6 +62,11 @@ RETURNING credits, sub_end
             select(User.credits).filter(User.id == user_tid)
         )
 
+    async def check_if_user_exists(self, user_tid: int) -> bool:
+        return await self.__db.scalar(
+            select(exists().where(User.id == user_tid))
+        )
+
     async def get_user(self, user_tid: int) -> UserSchema:
         user = await self.__db.scalar(
             select(User).filter(User.id == user_tid)

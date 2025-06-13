@@ -11,7 +11,7 @@ from bot.texts.dictionary import DictionaryTexts
 from depends import dictionary_service, translator
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
-from bot.callbacks.dictionary import AddWordToDictCallback, MarkDictWordAsWorkedCallback
+from bot.callbacks.dictionary import AddWordToDictCallback, MarkDictWordAsWorkedCallback, DictWordsListCallback
 
 router = Router()
 
@@ -50,8 +50,9 @@ router_.callback_query.middleware(DatabaseMiddleware())
 @router_.callback_query(AddWordToDictCallback.filter())
 async def add_word_to_dict(
         call: CallbackQuery, callback_data: AddWordToDictCallback,
-        db: AsyncSession
+        db: AsyncSession, state: FSMContext
 ):
+    await state.clear()
     if not await UsersService(db).do_paid_action(call.from_user.id, credits=1):
         await call.message.answer(
             BaseTexts.CREDITS_OVER,
@@ -72,6 +73,7 @@ async def dict_train(
         call: CallbackQuery, db: AsyncSession,
         state: FSMContext
 ):
+    await state.clear()
     last_word = call.message.html_text[
                 call.message.html_text.find('<blockquote>') + len('<blockquote>'):
                 call.message.html_text.find('</blockquote>')
@@ -208,3 +210,46 @@ async def mark_word_as_worked(
 
     if callback_data.from_training:
         pass
+
+
+@router_.callback_query(DictWordsListCallback.filter())
+async def dict_words_list(
+    call: CallbackQuery, callback_data: DictWordsListCallback, db: AsyncSession
+):
+    if callback_data.change_order:
+        call_text = 'Слова отсортированы '
+        if callback_data.order_by == 'alphabet':
+            call_text += 'по алфавиту '
+        elif callback_data.order_by == 'learning_rate':
+            call_text += 'по вашему уровню знания'
+
+        if callback_data.order_asc:
+            call_text += ' по возрастанию'
+        else:
+            call_text += ' по убыванию'
+        await call.answer(call_text)
+
+    count_words = await dictionary_service.count_user_dictionary_words(
+        user_id=call.from_user.id, db=db
+    )
+    if not count_words:
+        await call.answer('У вас пока нет слов в словаре. Зайдите в ➕, чтобы узнать как их добавить', show_alert=True)
+        return
+
+    words = await dictionary_service.get_user_dictionary_words(
+        user_id=call.from_user.id, db=db,
+        offset=callback_data.page * callback_data.limit,
+        limit=callback_data.limit,
+        order_by=callback_data.order_by,
+        order_asc=callback_data.order_asc
+    )
+
+    await call.message.edit_text(
+        text=DictionaryTexts.dict_words_list(user_words=words),
+        reply_markup=DictionaryKeyboards.dict_words_list(
+            page=callback_data.page, limit=callback_data.limit,
+            last_page=(count_words // callback_data.limit),
+            order_by=callback_data.order_by,
+            order_asc=callback_data.order_asc
+        )
+    )

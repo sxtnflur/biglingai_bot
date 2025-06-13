@@ -37,5 +37,7 @@ class BaseTexts:
             '\nТебе доступно <code>{}</code> бесплатных использований.\n'
             '<i>(-1 за каждое сообщение в чаттинге/задание в ошибках/генерацию в переводчике и т.д.)</i>'
             .format(credits) if credits else '',
-            '\n' + BaseTexts.SUB.format(sub_end.strftime('%H:%M %d.%m.%Y')) if sub_end else ''
+            '\n' + (
+            BaseTexts.SUB.format(sub_end.strftime('%H:%M %d.%m.%Y'))
+            if sub_end and sub_end > datetime.utcnow() else '')
         )

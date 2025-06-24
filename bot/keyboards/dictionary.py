@@ -112,10 +112,11 @@ class DictionaryKeyboards:
                     page=page-1, limit=limit, order_asc=order_asc, order_by=order_by
                 ).pack()
             ))
-        pag_row.append(InlineKeyboardButton(
-                text='{}/{}'.format(page+1, last_page+1),
-                callback_data='-'
-            ))
+        if last_page:
+            pag_row.append(InlineKeyboardButton(
+                    text='{}/{}'.format(page+1, last_page+1),
+                    callback_data='-'
+                ))
         if page != last_page:
             pag_row.append(InlineKeyboardButton(
                 text='➡', callback_data=DictWordsListCallback(

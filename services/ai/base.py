@@ -113,12 +113,12 @@ In "end_talking" set true if the dialog should be completed.
         )
         resp_main_dialog = await openai_main_dialog.send_text_get_schema(
             prompt=user_text,
-            messages=[
-                         {'role': 'user',
-                          'content': f"My English proficiency level is {user_lang_level}. Please keep this in mind when communicating with me. Let's talk about something in English. Just please don't fix my mistakes, because I really don't like it."},
-                         {'role': 'assistant', 'content': 'Okay! What you want to talk about?'},
-                         {'role': 'user', 'content': dialog_type.prompt(theme=theme)}
-                     ] + (messages or []),
+            messages=[{'role': 'system',
+                       'content': f"User's English proficiency level is {user_lang_level}. "
+                                  f"Please keep this in mind when communicating with him. "
+                                  f"Talk with him in English. Just please don't fix his mistakes. "
+                                  f"Theme of this dialogue is {theme} and type of the dialog is {dialog_type.label}"
+                       }] + (messages or []),
             schema=AnswerTalking,
             temperature=0.7
         )

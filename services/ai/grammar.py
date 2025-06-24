@@ -38,7 +38,11 @@ class GrammarAIService:
             audio=None,
             api_name="//predict"
         )
-        return result.result()[0]
+        correct: str = result.result()[0]
+        print(f'{correct=}')
+        if correct.endswith('.') and not text.endswith('.'):
+            return correct[:-1]
+        return correct
 
     async def process_text(self, text: str) -> GrammarResult:
         corr = await self.correct_text(text)

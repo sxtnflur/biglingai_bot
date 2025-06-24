@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-
 from schemas.subs import CreditsPack, Sub
+from .base import td_to_text
 
 
 class SubsTexts:
@@ -15,7 +15,7 @@ class SubsTexts:
 '''
 
     CREDITS = 'Выбери набор кредитов:'
-    SUBS = 'Выбери подходящую подписку:'
+    SUBS = '<b>Выбери подходящую подписку:</b>'
     EVERY_CREDITS_PACK = '<b>{}</b> кредитов / <b>{}</b> рублей'
     EVERY_SUB = '<b>{sub.name}:</b> <b>{sub.days}</b> дней / <b>{sub.price}</b> рублей'
 
@@ -23,13 +23,13 @@ class SubsTexts:
 <b>Кредитов:</b> {credits}
 <b>Цена:</b> {price} рублей
 
-Если возникнут проблемы, обращайтесь сюда: @sheggy_love
+Если возникнут проблемы, обращайтесь сюда: @teledeff_support
 '''
     BUY_SUB = '''
-<b>Подписка закончится через {days} дней</b>    
-<b>Цена:</b> {price}
+<b>Подписка на:</b> {days} дн
+<b>Цена:</b> {price} руб
 
-Если возникнут проблемы, обращайтесь сюда: @sheggy_love
+Если возникнут проблемы, обращайтесь сюда: @teledeff_support
 '''
     I_WANT_MORE_BUTTON = 'Посмотреть подписки'
 
@@ -59,20 +59,23 @@ class SubsTexts:
     @staticmethod
     def subs(
         subs: list[Sub],
-        current_sub_end: datetime | None = None,
+        td_before_sub_end: timedelta | None = None,
         has_autopayment: bool = False,
         autopayment_duration: timedelta | None = None
     ):
         text = ''
-        if current_sub_end and current_sub_end >= datetime.utcnow():
+        if td_before_sub_end and td_before_sub_end > timedelta(seconds=0):
             if has_autopayment:
-                text += f'<b>Следующее автосписание произойдет через:</b> ' \
-                        f'<code>{(datetime.utcnow() - current_sub_end).days}</code> дней\n' \
-                        f'<i>Чтобы отменить автосписание, нажмите кнопку "Отменить автосписание"</i>\n\n' \
-                        f'Автосписание по вашей текущей подписке происходит каждые {autopayment_duration.days} дней\n\n'
+                text += f'🕝 <b>Следующее автосписание произойдет через:</b> ' \
+                        f'<code>{td_to_text(td_before_sub_end)}</code>\n' \
+                        f'<blockquote>Чтобы отменить автосписание, нажмите кнопку ' \
+                        f'"❌ Отменить автопродление"</blockquote>\n'
             else:
-                text += f'<b>Ваша текущая подписка закончится через:</b> ' \
-                            f'<code>{(datetime.utcnow() - current_sub_end).days}</code> дней\n\n'
+                text += f'🕝 <b>Текущая подписка закончится через:</b> ' \
+                            f'<code>{td_to_text(td_before_sub_end)}</code>\n\n'
+
+            text += '<blockquote>Если вы купите подписку, ' \
+                    'ваша текущая подписка продлится на выбранное время</blockquote>\n\n'
 
         text += SubsTexts.SUBS + '\n\n' + '\n'.join(list(map(
             lambda x: SubsTexts.EVERY_SUB.format(sub=x) + (

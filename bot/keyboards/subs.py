@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from bot.callbacks.subs import BuyCreditsCallback, BuySubCallback, TestBuyCreditsCallback, TestBuySubCallback
 from bot.keyboards.base import BaseKeyboards
+from bot.texts.base import BaseTexts
 from schemas.subs import CreditsPack, Sub
 from typing_extensions import Literal
 
@@ -16,7 +17,7 @@ class SubsKeyboards:
                 text='Подписки', callback_data='subs'
             )],
             [InlineKeyboardButton(
-                text='Назад', callback_data='start'
+                text=BaseTexts.BACK, callback_data='start'
             )]
         ])
 
@@ -31,7 +32,7 @@ class SubsKeyboards:
             width=1
         )
         return InlineKeyboardMarkup(inline_keyboard=inl_kb + [[InlineKeyboardButton(
-            text='Назад', callback_data='credits_subs'
+            text=BaseTexts.BACK, callback_data='credits_subs'
         )]])
 
     @staticmethod
@@ -47,21 +48,22 @@ class SubsKeyboards:
         if has_autopayment:
             inl_kb.append([
                 InlineKeyboardButton(
-                    text='Отменить автопродление',
+                    text='❌ Отменить автопродление',
                     callback_data='cancel-autopayment'
                 )
             ])
         return InlineKeyboardMarkup(inline_keyboard=inl_kb + [[InlineKeyboardButton(
-            text='Назад', callback_data='start'
+            text=BaseTexts.BACK, callback_data='start'
         )]])
 
     @staticmethod
     def cancel_autopayment():
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text='Да', callback_data='cancel-autopayment-2'
-            ), InlineKeyboardButton(
                 text='Нет - вернуться назад', callback_data='subs'
+            )],
+            [InlineKeyboardButton(
+                text='Да', callback_data='cancel-autopayment-2'
             )]
         ])
 
@@ -70,10 +72,10 @@ class SubsKeyboards:
     def pay(pay_url: str, credits_or_subs: Literal['credits', 'subs']):
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text='Оплата', url=pay_url
+                text='Оплатить', url=pay_url
             )],
             [InlineKeyboardButton(
-                text='Назад', callback_data='credits' if credits_or_subs == 'credits' else 'subs'
+                text=BaseTexts.BACK, callback_data='credits' if credits_or_subs == 'credits' else 'subs'
             )]
         ])
 
@@ -81,10 +83,10 @@ class SubsKeyboards:
     def test_pay_for_sub(sub_id: int):
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text='Оплата', callback_data=TestBuySubCallback(id=sub_id).pack()
+                text='Оплатить', callback_data=TestBuySubCallback(id=sub_id).pack()
             )],
             [InlineKeyboardButton(
-                text='Назад', callback_data='subs'
+                text=BaseTexts.BACK, callback_data='subs'
             )]
         ])
 
@@ -92,9 +94,9 @@ class SubsKeyboards:
     def test_pay_for_credits(credits_pack_id: int):
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text='Оплата', callback_data=TestBuyCreditsCallback(id=credits_pack_id).pack()
+                text='Оплатить', callback_data=TestBuyCreditsCallback(id=credits_pack_id).pack()
             )],
             [InlineKeyboardButton(
-                text='Назад', callback_data='credits'
+                text=BaseTexts.BACK, callback_data='credits'
             )]
         ])

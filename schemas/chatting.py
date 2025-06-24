@@ -203,11 +203,11 @@ class DialogType(StrEnum):
         labels = {
             DialogType.SMALL_TALK: 'Small Talk',
             DialogType.LONG_TALK: 'Long Talk',
-            DialogType.ROLE_PLAY: 'Ролевая игра',
-            DialogType.STORY: 'История',
-            DialogType.NEWS: 'Новости',
-            DialogType.DEBATE: 'Дебаты',
-            DialogType.CULTURE: 'Культура'
+            DialogType.ROLE_PLAY: 'Role Play',
+            DialogType.STORY: 'Story',
+            DialogType.NEWS: 'News',
+            DialogType.DEBATE: 'Debates',
+            DialogType.CULTURE: 'Culture'
         }
         return labels[self]
 

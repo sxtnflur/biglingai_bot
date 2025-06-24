@@ -23,6 +23,7 @@ class MistakeSchema(BaseModel):
     class Config:
         from_attributes = True
 
+
 class MistakeSchemaNoType(BaseModel):
     id: int
     type_key: str
@@ -170,6 +171,7 @@ class MistakesService:
     ) -> MistakeSchema | None:
         stmt = (
             select(models.Mistake)
+            .options(selectinload(models.Mistake.type))
             .filter(models.Mistake.user_id == user_id,
                     models.Mistake.is_worked_out.is_(False))
         )

@@ -15,15 +15,17 @@ class MistakesTexts:
 '''
 
     MISTAKES_LIST = '''
-Выберите ошибку, чтобы разобрать её:
+Нажмите на ошибку, чтобы посмотреть информацию о ней
+
+или "🕹️ Квиз" - для отработки ошибок из этой группы на заданиях
 '''
 
     MISTAKE = '''
 <b>Группа:</b> {mistake.type.name}
 
-<b>Контекст:</b> {mistake.user_message}
+<b>Оригинал:</b> {mistake.user_message}
 
-❌ <s>{mistake.incorrect}</s> → <b>{mistake.correct}</b>
+❌ <s>{mistake.incorrect}</s> ➡ <b>{mistake.correct}</b>
 ℹ {mistake.explanation}
 📌 <b>Пример:</b> {example}
 '''
@@ -38,7 +40,7 @@ class MistakesTexts:
     I_WORKED_OUT_MISTAKE_REASON_DELETE_BUTTON = 'Я отработал эту ошибку!'
     ERROR_MISTAKE_REASON_DELETE_BUTTON = 'Ошибка выявлена неправильно!'
     EXIT_BUTTON = 'Выйти'
-    WORK_OUT_MISTAKE_BUTTON = 'Отработать ошибки'
+    WORK_OUT_MISTAKE_BUTTON = '🕹️ Квиз'
     START_NEW_DIALOG = 'Начать новый диалог'
 
     @staticmethod

@@ -41,7 +41,7 @@ class ChattingTexts:
         def prepare_mistake(mistake: Mistake):
             print(f'{mistake=}')
             return (
-                    f"❌ <s>{mistake.incorrect}</s> → <b>{mistake.correct}</b>\n"
+                    f"❌ <s>{mistake.incorrect}</s> ➡ <b>{mistake.correct}</b>\n"
                     f"ℹ {mistake.explanation}\n"
                     f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
             )
@@ -61,8 +61,7 @@ class ChattingTexts:
     def result_dialog(count_messages: int, mistakes: list[MistakeSchema] | None = None) -> str:
         def prepare_mistake(mistake: MistakeSchema):
             return (
-                    f"{mistake.type.name}"
-                    f"<s>{mistake.incorrect}</s> → <b>{mistake.correct}</b>\n"
+                    f"{mistake.type.name}: <i>{mistake.incorrect}</i> ➡ <i>{mistake.correct}</i>\n"
                     # f"ℹ {mistake.explanation}\n"
                     # f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
             )

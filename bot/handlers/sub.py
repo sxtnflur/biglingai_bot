@@ -49,10 +49,10 @@ async def subs(
         SubsTexts.subs(
             subs,
             has_autopayment=user.is_autopayment,
-            current_sub_end=user.sub_end,
+            td_before_sub_end=user.td_before_sub_end,
             autopayment_duration=user.autopayment_duration
         ),
-        reply_markup=SubsKeyboards.subs(subs)
+        reply_markup=SubsKeyboards.subs(subs, has_autopayment=user.is_autopayment)
     )
 
 
@@ -106,7 +106,7 @@ async def pre_cancel_autopayment(
     call: CallbackQuery
 ):
     await call.message.edit_text(
-        'Вы уверены, что хотите отменить автопродление подписки?',
+        '❗ Вы уверены, что хотите отменить автопродление подписки? ❗',
         reply_markup=SubsKeyboards.cancel_autopayment()
     )
 

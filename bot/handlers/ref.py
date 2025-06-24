@@ -4,6 +4,7 @@ from bot.keyboards.ref import RefKeyboards
 from bot.middlewares import DatabaseMiddleware
 from bot.texts.ref import RefTexts
 from config import settings
+from depends import ref_service
 from services.ref_service import RefService
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +18,7 @@ router.callback_query.middleware(DatabaseMiddleware())
 async def ref(
     call: CallbackQuery, db: AsyncSession
 ):
-    ref_info = await RefService(db).get_user_ref_info(user_tid=call.from_user.id, bot=call.bot)
+    ref_info = await ref_service.get_user_ref_info(db=db, user_tid=call.from_user.id, bot=call.bot)
     if ref_info.paid_refs_percent:
         text = RefTexts.special_main(
             balance=ref_info.paid_refs_balance,

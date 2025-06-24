@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, User as TgUser
-from depends import payment_factory
+from depends import payment_factory, subs_service, payments_service
 from services.payments_service import PaymentsService
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,7 +32,7 @@ async def credits_subs(
 async def credits(
     call: CallbackQuery
 ):
-    credits_packs = SubsService().get_credits_packs()
+    credits_packs = subs_service.get_credits_packs()
     await call.message.edit_text(
         SubsTexts.credits_packs(credits_packs),
         reply_markup=SubsKeyboards.credits_packs(credits_packs)
@@ -43,7 +43,7 @@ async def credits(
 async def subs(
     call: CallbackQuery, db: AsyncSession
 ):
-    subs = SubsService().get_subs()
+    subs = subs_service.get_subs()
     user = await UsersService(db).get_user(call.from_user.id)
     await call.message.edit_text(
         SubsTexts.subs(
@@ -82,13 +82,14 @@ async def subs(
 async def buy_sub(
     call: CallbackQuery, callback_data: BuySubCallback, db: AsyncSession
 ):
-    sub = SubsService().get_sub(callback_data.id)
+    sub = subs_service.get_sub(callback_data.id)
     pay_data = await payment_factory.create_payment(
         payment_method='yookassa',
         amount=sub.price,
         description='Покупка подписки'
     )
-    await PaymentsService(db).save_payment(
+    await payments_service.save_payment(
+        db=db,
         user_tid=call.from_user.id,
         amount=sub.price,
         order_id=pay_data.id,
@@ -114,7 +115,7 @@ async def pre_cancel_autopayment(
 async def cancel_autopayment(
     call: CallbackQuery, db: AsyncSession
 ):
-    await SubsService().cancel_autopayment(
+    await subs_service.cancel_autopayment(
         user_id=call.from_user.id, db=db
     )
     await call.answer('Автопродление подписки отменено', show_alert=True)

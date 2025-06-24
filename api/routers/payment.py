@@ -5,7 +5,7 @@ from aiogram import Bot
 from bot.keyboards.base import BaseKeyboards
 from bot.texts.base import BaseTexts
 from config import settings
-from depends import logger_service
+from depends import logger_service, payment_factory, payments_service
 from fastapi import APIRouter, Request, Depends
 from pydantic import BaseModel
 from services.payments_service import PaymentsService
@@ -40,8 +40,8 @@ async def process_pay(
         payment_method_title: str | None = None
 ):
     bot = Bot(token=settings.BOT_TOKEN)
-    payment = await PaymentsService(db).mark_as_paid(
-        bot=bot, order_id=order_id
+    payment = await payments_service.mark_as_paid(
+        db=db, bot=bot, order_id=order_id
     )
     text = ''
     if save_payment_method_id:
@@ -63,7 +63,7 @@ async def process_pay(
     )
     await bot.send_message(
         chat_id=payment.user.id,
-        text=BaseTexts.start(payment.user.first_name, payment.user.credits, payment.sub_end),
+        text=BaseTexts.start(payment.user.first_name, payment.user.credits, payment.user.td_before_sub_end),
         reply_markup=BaseKeyboards.main_menu(),
         parse_mode='HTML'
     )

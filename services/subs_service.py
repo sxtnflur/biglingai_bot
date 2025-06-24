@@ -1,14 +1,36 @@
 from datetime import timedelta, datetime
 
 from database import models
+from schedulers import SchedulerServiceProtocol
 from schedulers.autopayment import get_job_id
-from schedulers import scheduler
 from schemas.subs import CreditsPack, Sub
 from sqlalchemy import update, case, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing_extensions import Protocol
 
 
-class SubsService:
+class SubsServiceProtocol(Protocol):
+    def get_subs(self) -> list[Sub]: ...
+
+    def get_sub(self, id: int) -> Sub: ...
+
+    async def create_or_increase_sub_by_days(
+            self, days: int, user_id: int, db: AsyncSession
+    ) -> datetime: ...
+
+    async def create_or_increase_sub(
+            self, sub_id: int, user_id: int, db: AsyncSession
+    ) -> datetime: ...
+
+    async def cancel_autopayment(
+            self, user_id: int, db: AsyncSession
+    ) -> None: ...
+
+
+class SubsService(SubsServiceProtocol):
+    def __init__(self, scheduler_service: SchedulerServiceProtocol):
+        self.scheduler_service = scheduler_service
+
     def get_credits_packs(self):
         return [
             CreditsPack(
@@ -74,4 +96,4 @@ class SubsService:
             .values(is_autopayment=False)
         )
         job_id = get_job_id(user_id)
-        scheduler.remove_job(job_id)
+        self.scheduler_service.scheduler.remove_job(job_id)

@@ -1,4 +1,20 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+
+
+def td_to_text(td: timedelta) -> str:
+    total_seconds = int(td.total_seconds())
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+
+    if days > 0:
+        return f"{days}д {hours}ч"
+    if hours > 0:
+        return f"{hours}ч {minutes}мин"
+    if minutes > 0:
+        return f"{minutes}мин {seconds}сек"
+    return f"{seconds}сек"
 
 
 class BaseTexts:
@@ -16,7 +32,7 @@ class BaseTexts:
 <code>🕝 Подписки</code> - <i>Купи подписку и пользуйся всем функционалом бота</i>
 <code>💰 Реф. программа</code> - <i>Получай кредиты бесплатно за приглашенных друзей</i>
 '''.strip()
-    SUB = '<b>Подписка закончится:</b> <code>{}</code>'
+    SUB = '<b>Подписка закончится через:</b> <code>{}</code>'
 
     CREDITS_OVER = 'Похоже у тебя нет подписки, необходимой для этого действия. ' \
                    'Оформи её, чтобы полноценно пользоваться ботом:'
@@ -31,13 +47,13 @@ class BaseTexts:
     REF_BUTTON = '💰 Реф. программа'
 
     @staticmethod
-    def start(first_name: str, credits: int = 0, sub_end: datetime | None = None):
+    def start(first_name: str, credits: int = 0, td_before_sub_end: timedelta | None = None):
         return BaseTexts.START.format(
             first_name,
             '\nТебе доступно <code>{}</code> бесплатных использований.\n'
             '<i>(-1 за каждое сообщение в чаттинге/задание в ошибках/генерацию в переводчике и т.д.)</i>'
             .format(credits) if credits else '',
             '\n' + (
-            BaseTexts.SUB.format(sub_end.strftime('%H:%M %d.%m.%Y'))
-            if sub_end and sub_end > datetime.utcnow() else '')
+            BaseTexts.SUB.format(td_to_text(td_before_sub_end))
+            if td_before_sub_end and td_before_sub_end > timedelta(seconds=0) else '')
         )

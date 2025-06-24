@@ -1,4 +1,5 @@
 from openai import AsyncOpenAI
+from schedulers import SchedulerService
 from services import (
     CachingService, AbstractCachingService,
     AbstractChatHistoryService, ChatHistoryService,
@@ -9,6 +10,9 @@ from payments import YooKassaService, PaymentFactory
 from config import settings
 from services.dictionary import DictionaryService
 from services.logger import LoggerService
+from services.payments_service import PaymentsService
+from services.ref_service import RefService
+from services.subs_service import SubsService
 
 caching_service: AbstractCachingService = CachingService(redis_url=settings.REDIS_URL)
 
@@ -57,3 +61,12 @@ dictionary_service = DictionaryService(
 logger_service = LoggerService(
     admin_tg_ids=[1304563494], bot_token=settings.BOT_TOKEN
 )
+
+scheduler = SchedulerService(
+    payment_factory=payment_factory,
+    logger_service=logger_service
+)
+
+subs_service = SubsService(scheduler_service=scheduler)
+ref_service = RefService(subs_service=subs_service)
+payments_service = PaymentsService(subs_service=subs_service, ref_service=ref_service)

@@ -6,6 +6,7 @@ from bot.keyboards.base import BaseKeyboards
 from bot.middlewares import DatabaseMiddleware
 from bot.texts.base import BaseTexts
 from config import settings
+from depends import subs_service, ref_service
 from services.ref_service import RefService
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +25,7 @@ async def start_ref(
 ):
     invited_by_id = None
     if not await UsersService(db).check_if_user_exists(message.from_user.id):
-        ref_info = await RefService(db).process_ref_payload(
+        ref_info = await ref_service.process_ref_payload(
             command.args, bot=message.bot, user_full_name=message.from_user.full_name,
             user_username=message.from_user.username,
             user_id=message.from_user.id
@@ -37,7 +38,7 @@ async def start_ref(
         start_credits=(settings.START_CREDITS or 0)
     )
     await state.clear()
-    await message.answer(BaseTexts.start(message.from_user.first_name, user.credits, user.sub_end),
+    await message.answer(BaseTexts.start(message.from_user.first_name, user.credits, user.td_before_sub_end),
                          reply_markup=BaseKeyboards.main_menu())
 
 
@@ -47,7 +48,7 @@ async def start(
 ):
     user = await UsersService(db).add_user_from_tguser(message.from_user)
     await state.clear()
-    await message.answer(BaseTexts.start(message.from_user.first_name, user.credits, user.sub_end),
+    await message.answer(BaseTexts.start(message.from_user.first_name, user.credits, user.td_before_sub_end),
                          reply_markup=BaseKeyboards.main_menu())
 
 
@@ -60,10 +61,10 @@ async def start_call(
     user = await UsersService(db).get_user(call.from_user.id)
     try:
         await call.message.edit_text(
-            BaseTexts.start(call.from_user.first_name, user.credits, user.sub_end),
+            BaseTexts.start(call.from_user.first_name, user.credits, user.td_before_sub_end),
             reply_markup=BaseKeyboards.main_menu()
         )
     except:
         await call.message.delete_reply_markup()
-        await call.message.answer(BaseTexts.start(call.from_user.first_name, user.credits, user.sub_end),
+        await call.message.answer(BaseTexts.start(call.from_user.first_name, user.credits, user.td_before_sub_end),
                                   reply_markup=BaseKeyboards.main_menu())

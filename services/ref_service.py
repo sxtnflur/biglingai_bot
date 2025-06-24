@@ -11,13 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, load_only
 from schemas.users import User as UserSchema
 from typing_extensions import Literal
-from .subs_service import SubsService
+from .subs_service import SubsService, SubsServiceProtocol
 
 
 class RefService:
-    def __init__(self, db: AsyncSession):
-        self.__db = db
-        self.subs_service = SubsService()
+    def __init__(self, subs_service: SubsServiceProtocol):
+        self.subs_service = subs_service
 
     async def create_ref_link(self, user_tid: int, bot: Bot):
         return await create_start_link(
@@ -58,15 +57,15 @@ class RefService:
         except:
             return
 
-    async def on_user_paid(self, user_tid: int, amount: int, sub_id: int, bot: Bot) -> None:
-        has_payments = await self.__db.scalar(
+    async def on_user_paid(self, db: AsyncSession, user_tid: int, amount: int, sub_id: int, bot: Bot) -> None:
+        has_payments = await db.scalar(
             select(exists().where(models.Payment.user_id == user_tid))
         )
         if has_payments:
             return
 
         Refferal = aliased(models.User)
-        refferer = await self.__db.scalar(
+        refferer = await db.scalar(
             select(models.User)
             .filter(
                 Refferal.invited_by_id.is_not(None),
@@ -102,7 +101,7 @@ class RefService:
                     ((amount * models.User.paid_refs_percent) // 100)
                 )
             )
-            res = await self.__db.execute(stmt)
+            res = await db.execute(stmt)
             if not res:
                 return
             res = res.fetchone()
@@ -125,7 +124,7 @@ class RefService:
             sub = await self.subs_service.get_sub(sub_id)
             increase_days = sub.days // 2
             sub_end = await self.subs_service.create_or_increase_sub_by_days(
-                days=increase_days, user_id=user_tid, db=self.__db
+                days=increase_days, user_id=user_tid, db=db
             )
             await bot.send_message(
                 refferer.id,
@@ -139,7 +138,7 @@ class RefService:
             )
 
     async def get_user_ref_info(
-            self, user_tid: int, bot: Bot
+            self, db: AsyncSession, user_tid: int, bot: Bot
     ) -> UserRefInfo:
         ref_link = await self.create_ref_link(user_tid, bot)
 
@@ -151,8 +150,8 @@ class RefService:
                 ))
             .filter(models.User.invited_by_id == user_tid, models.User.id != user_tid)
         )
-        count_refs, count_paid_refs = (await self.__db.execute(stmt_count_refs)).fetchone()
-        user: models.User = await self.__db.scalar(
+        count_refs, count_paid_refs = (await db.execute(stmt_count_refs)).fetchone()
+        user: models.User = await db.scalar(
             select(models.User)
             .options(
                 load_only(

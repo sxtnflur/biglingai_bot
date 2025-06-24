@@ -25,3 +25,8 @@ class User(BaseModel):
         if self.last_name:
             name.append(self.last_name)
         return ' '.join(name)
+
+    @property
+    def td_before_sub_end(self) -> timedelta:
+        if self.sub_end and datetime.utcnow() < self.sub_end:
+            return self.sub_end - datetime.utcnow()

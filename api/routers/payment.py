@@ -5,7 +5,7 @@ from aiogram import Bot
 from bot.keyboards.base import BaseKeyboards
 from bot.texts.base import BaseTexts
 from config import settings
-from depends import logger_service, payment_factory, payments_service
+from depends import logger_service, payment_factory, payments_service, scheduler, subs_service
 from fastapi import APIRouter, Request, Depends
 from pydantic import BaseModel
 from services.payments_service import PaymentsService
@@ -45,11 +45,12 @@ async def process_pay(
     )
     text = ''
     if save_payment_method_id:
-        await UsersService(db).update_user(
-            user_tid=payment.user.id,
+        await subs_service.add_autopayment_to_user(
+            user_id=payment.user.id,
             payment_method_id=save_payment_method_id,
-            is_autopayment=True,
-            autopayment_duration=datetime.timedelta(days=payment.sub.days)
+            autopayment_duration=datetime.timedelta(days=payment.sub.days),
+            sub_end=payment.sub_end,
+            db=db
         )
         text += '✅ Способ оплаты {} сохранен'.format(
             f'<i>{payment_method_title}</i>' if payment_method_title else ''

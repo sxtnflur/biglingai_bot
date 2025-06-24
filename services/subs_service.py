@@ -4,6 +4,7 @@ from database import models
 from schedulers import SchedulerServiceProtocol
 from schedulers.autopayment import get_job_id
 from schemas.subs import CreditsPack, Sub
+from services.users_service import UsersService
 from sqlalchemy import update, case, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing_extensions import Protocol
@@ -95,5 +96,23 @@ class SubsService(SubsServiceProtocol):
             .filter(models.User.id == user_id)
             .values(is_autopayment=False)
         )
-        job_id = get_job_id(user_id)
-        self.scheduler_service.scheduler.remove_job(job_id)
+        self.scheduler_service.autopayment_scheduler.remove_user_job(user_id)
+
+    async def add_autopayment_to_user(self, user_id: int, payment_method_id: str,
+                                      autopayment_duration: timedelta,
+                                      sub_end: datetime,
+                                      db: AsyncSession
+                                      ) -> None:
+        await UsersService(db).update_user(
+            user_tid=user_id,
+            payment_method_id=payment_method_id,
+            is_autopayment=True,
+            autopayment_duration=autopayment_duration
+        )
+        self.scheduler_service.autopayment_scheduler.add_job_to_user(user_id, sub_end=sub_end)
+
+    # async def return_autopayment_to_user(self, user_id: int, db: AsyncSession):
+    #     await UsersService(db).update_user(
+    #         user_tid=user_id,
+    #         is_autopayment=True
+    #     )

@@ -120,3 +120,12 @@ async def cancel_autopayment(
     )
     await call.answer('Автопродление подписки отменено', show_alert=True)
     await subs(call, db)
+
+
+# @router.callback_query(F.data == 'return-autopayment')
+# async def return_autopayment(
+#     call: CallbackQuery, db: AsyncSession
+# ):
+#     await subs_service.return_autopayment_to_user(
+#         user_id=call.from_user.id, db=db
+#     )

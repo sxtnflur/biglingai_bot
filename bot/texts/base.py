@@ -48,7 +48,6 @@ class BaseTexts:
     @staticmethod
     def start(first_name: str, credits: int = 0, td_before_sub_end: timedelta | None = None):
         return BaseTexts.START.format(
-            first_name,
             '\n\n' + (
             BaseTexts.SUB.format(td_to_text(td_before_sub_end))
             if td_before_sub_end and td_before_sub_end > timedelta(seconds=0) else '')

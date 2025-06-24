@@ -9,11 +9,12 @@ class SchedulerService(SchedulerServiceProtocol):
         self.scheduler = AsyncIOScheduler()
         self.payment_factory = payment_factory
         self.logger_service = logger_service
+        self.autopayment_scheduler = AutopaymentScheduler(
+            self.scheduler, self.payment_factory, self.logger_service
+        )
 
     async def start(self) -> None:
         self.scheduler.start()
-        await AutopaymentScheduler(
-            self.scheduler, self.payment_factory, self.logger_service
-        ).restart_autopayment()
+        await self.autopayment_scheduler.restart_autopayment()
 
 

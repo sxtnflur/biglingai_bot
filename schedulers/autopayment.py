@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database import models
 from database.init_db import async_session
+from .abc import AutopaymentSchedulerProtocol
 from sqlalchemy import select, update, func
 from sqlalchemy.orm import load_only
 from apscheduler.triggers.cron import CronTrigger
@@ -10,7 +13,7 @@ def get_job_id(user_id: int):
     return f'autopayment-{user_id}'
 
 
-class AutopaymentScheduler:
+class AutopaymentScheduler(AutopaymentSchedulerProtocol):
     def __init__(self, scheduler: AsyncIOScheduler, payment_factory, logger_service):
         self.scheduler = scheduler
         self.payment_factory = payment_factory
@@ -54,6 +57,25 @@ class AutopaymentScheduler:
                 f'Автооплата для пользователя {user_id} успешно произведена!'
             )
 
+    def remove_user_job(self, user_id: int) -> None:
+        self.scheduler.remove_job(get_job_id(user_id))
+
+    def add_job_to_user(self, user_id: int, sub_end: datetime):
+        self.scheduler.add_job(
+            self.do_pay,
+            trigger=CronTrigger(
+                year=sub_end.year,
+                month=sub_end.month,
+                day=sub_end.day,
+                hour=sub_end.hour,
+                minute=sub_end.minute,
+                second=sub_end.second
+            ),
+            id=get_job_id(user_id),
+            args=[user_id],
+            replace_existing=True
+        )
+
     async def restart_autopayment(self):
         await self.logger.log_by_telegram_bot('Запускаю задачи на автооплаты')
         async with async_session() as session:
@@ -73,19 +95,6 @@ class AutopaymentScheduler:
             )
 
         for user in users:
-            self.scheduler.add_job(
-                self.do_pay,
-                trigger=CronTrigger(
-                    year=user.sub_end.year,
-                    month=user.sub_end.month,
-                    day=user.sub_end.day,
-                    hour=user.sub_end.hour,
-                    minute=user.sub_end.minute,
-                    second=user.sub_end.second
-                ),
-                id=get_job_id(user.id),
-                args=[user.id],
-                replace_existing=True
-            )
+            self.add_job_to_user(user_id=user.id, sub_end=user.sub_end)
 
         await self.logger.log_by_telegram_bot('Задачи на автооплаты установлены')

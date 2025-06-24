@@ -6,7 +6,6 @@ ENV PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 COPY . /app
 
-RUN pip install -U git+https://github.com/PrithivirajDamodaran/Gramformer.git
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 

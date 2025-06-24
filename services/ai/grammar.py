@@ -1,23 +1,48 @@
-from gramformer import Gramformer
 from schemas.grammar import GrammarResult, GrammarEdit
+import errant
+from gradio_client import Client
 
 
 class GrammarAIService:
     def __init__(self):
-        self.gf = Gramformer(models=1, use_gpu=False)
+        self.gr_client = Client("gaur3009/Speech_grammar")
+        self.annotator = errant.load('en')
+
+    async def get_edits(self, orig: str, corr: str) -> list[GrammarEdit]:
+        orig = self.annotator.parse(orig)
+        cor = self.annotator.parse(corr)
+        alignment = self.annotator.align(orig, cor)
+        edits = self.annotator.merge(alignment)
+
+        if len(edits) == 0:
+            return []
+
+        edit_annotations = []
+        for e in edits:
+            e = self.annotator.classify(e)
+            edit_annotations.append(
+                GrammarEdit(
+                    type=e.type[2:],
+                    incorrect=e.o_str,
+                    correct=e.c_str
+                ))
+
+        if len(edit_annotations) > 0:
+            return edit_annotations
+        else:
+            return []
+
+    async def correct_text(self, text: str) -> str:
+        result = self.gr_client.submit(
+            text=text,
+            api_name="//predict"
+        )
+        return result.result()[0]
 
     async def process_text(self, text: str) -> GrammarResult:
-        corrected_sentences = self.gf.correct(text, max_candidates=1)
-        results = []
-        for corr in corrected_sentences:
-            print(f'{corr=}')
-            edits = self.gf.get_edits(text, corr)
-            results.append(
-                GrammarResult(
-                    correct=corr,
-                    original=text,
-                    edits=list(map(lambda x: GrammarEdit(type=x[0], incorrect=x[1], correct=x[4]), edits))
-                )
-            )
-        print(f'{results=}')
-        return results[0]
+        corr = await self.correct_text(text)
+        return GrammarResult(
+            correct=corr,
+            original=text,
+            edits=await self.get_edits(orig=text, corr=corr)
+        )

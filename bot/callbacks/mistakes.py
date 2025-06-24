@@ -22,6 +22,7 @@ class MistakeGroupListCallback(ScrollingCallback, prefix='mistake-group'):
 class TrainMistakeGroupCallback(CallbackData, prefix='train-mistake-group'):
     group: str
 
+
 class TrainMistakesDialogCallback(CallbackData, prefix='train-mistake-dialog'):
     dialog_uuid: str
 

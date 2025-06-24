@@ -41,11 +41,17 @@ async def credits(
 
 @router.callback_query(F.data == 'subs')
 async def subs(
-    call: CallbackQuery
+    call: CallbackQuery, db: AsyncSession
 ):
     subs = SubsService().get_subs()
+    user = await UsersService(db).get_user(call.from_user.id)
     await call.message.edit_text(
-        SubsTexts.subs(subs),
+        SubsTexts.subs(
+            subs,
+            has_autopayment=user.is_autopayment,
+            current_sub_end=user.sub_end,
+            autopayment_duration=user.autopayment_duration
+        ),
         reply_markup=SubsKeyboards.subs(subs)
     )
 
@@ -94,62 +100,22 @@ async def buy_sub(
     )
 
 
-# @router.callback_query(TestBuyCreditsCallback.filter())
-# async def test_buy_credits(
-#     call: CallbackQuery, callback_data: TestBuyCreditsCallback,
-#     db: AsyncSession
-# ):
-#     await give_credits(
-#         order_id='-', credits_pack_id=callback_data.id, user=call.from_user, db=db
-#     )
+@router.callback_query(F.data == 'cancel-autopayment')
+async def pre_cancel_autopayment(
+    call: CallbackQuery
+):
+    await call.message.edit_text(
+        'Вы уверены, что хотите отменить автопродление подписки?',
+        reply_markup=SubsKeyboards.cancel_autopayment()
+    )
 
 
-# @router.callback_query(TestBuySubCallback.filter())
-# async def test_buy_sub(
-#     call: CallbackQuery,
-#     callback_data: TestBuySubCallback,
-#     db: AsyncSession
-# ):
-#     await give_sub(
-#         order_id='-', sub_id=callback_data.id, user=call.from_user, db=db
-#     )
-
-
-# async def give_credits(order_id: str, credits_pack_id: int, user: TgUser, db: AsyncSession):
-#     credits_pack = SubsService().get_credits_pack_by_id(credits_pack_id)
-#     user_credits = await UsersService(db).update_user_credits(
-#         user.id, credits=credits_pack.credits, action='up'
-#     )
-#     payment = await PaymentsService(db).mark_as_paid(
-#         bot=user.bot, order_id=order_id
-#     )
-#     await user.bot.send_message(
-#         user.id,
-#         text='<b>Вы получили:</b> {} кредитов.\n<b>Ваше текущее количество кредитов:</b> {}'
-#         .format(credits_pack.credits, user_credits)
-#     )
-#     user_db = await UsersService(db).get_user(user.id)
-#     await user.bot.send_message(
-#         chat_id=user.id,
-#         text=BaseTexts.start(user.first_name, user_credits, user_db.sub_end),
-#         reply_markup=BaseKeyboards.main_menu()
-#     )
-
-
-# async def give_sub(order_id: str, sub_id: int, user: TgUser, db: AsyncSession):
-#     sub = SubsService().get_sub(sub_id)
-#     sub_end = await UsersService(db).give_sub(user_tid=user.id, td=timedelta(days=sub.days))
-#     await PaymentsService(db).mark_as_paid(
-#         bot=user.bot, order_id=order_id
-#     )
-#     await user.bot.send_message(
-#         user.id,
-#         text='<b>Ваша подписка продлена на:</b> {} дней.\n<b>Теперь она закончится:</b> {}'
-#         .format(sub.days, sub_end.strftime('%H:%M %d.%m.%Y'))
-#     )
-#     user_credits = await UsersService(db).get_user_credits(user.id)
-#     await user.bot.send_message(
-#         chat_id=user.id,
-#         text=BaseTexts.start(user.first_name, user_credits, sub_end),
-#         reply_markup=BaseKeyboards.main_menu()
-#     )
+@router.callback_query(F.data == 'cancel-autopayment-2')
+async def cancel_autopayment(
+    call: CallbackQuery, db: AsyncSession
+):
+    await SubsService().cancel_autopayment(
+        user_id=call.from_user.id, db=db
+    )
+    await call.answer('Автопродление подписки отменено', show_alert=True)
+    await subs(call, db)

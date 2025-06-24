@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import BIGINT
@@ -15,6 +15,10 @@ class User(Base):
     last_name: Mapped[str | None]
     credits: Mapped[int] = mapped_column(server_default='0')
     sub_end: Mapped[datetime | None]
+
+    payment_method_id: Mapped[str | None]
+    is_autopayment: Mapped[bool] = mapped_column(server_default='False')
+    autopayment_duration: Mapped[timedelta | None]
 
     invited_by_id: Mapped[int | None] = mapped_column(BIGINT, nullable=True)
     credits_from_refs: Mapped[int] = mapped_column(server_default='0')

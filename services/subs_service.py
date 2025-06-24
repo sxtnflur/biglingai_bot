@@ -1,4 +1,11 @@
+from datetime import timedelta, datetime
+
+from database import models
+from schedulers.autopayment import get_job_id
+from schedulers import scheduler
 from schemas.subs import CreditsPack, Sub
+from sqlalchemy import update, case, and_, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class SubsService:
@@ -33,3 +40,38 @@ class SubsService:
 
     def get_sub(self, id: int):
         return self.get_subs()[id-1]
+
+    async def create_or_increase_sub_by_days(
+        self, days: int, user_id: int, db: AsyncSession
+    ) -> datetime:
+        return await db.scalar(
+            update(models.User)
+            .filter(models.User.id == user_id)
+            .values(sub_end=case(
+                (and_(
+                    models.User.sub_end.isnot(None),
+                    models.User.sub_end >= func.now()
+                ), models.User.sub_end + timedelta(days=days)),
+                else_=func.now() + timedelta(days=days)
+            ))
+            .returning(models.User.sub_end)
+        )
+
+    async def create_or_increase_sub(
+        self, sub_id: int, user_id: int, db: AsyncSession
+    ) -> datetime:
+        sub = self.get_sub(sub_id)
+        return await self.create_or_increase_sub_by_days(
+            days=sub.days, user_id=user_id, db=db
+        )
+
+    async def cancel_autopayment(
+        self, user_id: int, db: AsyncSession
+    ) -> None:
+        await db.execute(
+            update(models.User)
+            .filter(models.User.id == user_id)
+            .values(is_autopayment=False)
+        )
+        job_id = get_job_id(user_id)
+        scheduler.remove_job(job_id)

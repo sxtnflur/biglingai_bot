@@ -1,13 +1,25 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, SwitchInlineQueryChosenChat, CopyTextButton
 from ..texts.ref import RefTexts
 from ..texts.base import BaseTexts
 
 
 class RefKeyboards:
     @staticmethod
-    def main(is_special: bool):
-        inl_kb = []
-        if is_special:
+    def main(is_special: bool, ref_link: str):
+        inl_kb = [[InlineKeyboardButton(
+                text='Пригласить друга',
+                switch_inline_query_chosen_chat=SwitchInlineQueryChosenChat(
+                    query='Приходи в бота изучать английский по ссылке!\n{}'.format(ref_link),
+                    allow_user_chats=True,
+                    allow_bot_chats=False,
+                    allow_group_chats=True,
+                    allow_channel_chats=True
+                )
+            ), InlineKeyboardButton(
+            text='Скопировать ссылку',
+            copy_text=CopyTextButton(text=ref_link)
+        )]]
+        if not is_special:
             inl_kb.append([InlineKeyboardButton(
                 text=RefTexts.SPECIAL_REF_BUTTON, callback_data='about-special-ref'
             )])

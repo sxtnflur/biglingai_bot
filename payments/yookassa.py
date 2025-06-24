@@ -1,5 +1,6 @@
 import json
 import abc
+import uuid
 from yookassa import Configuration, Payment
 from .base import AbstractPaymentService, PaymentData
 from config import settings
@@ -23,7 +24,14 @@ class YooKassaService(YooKassaServiceABC):
         Configuration.account_id = shop_id
         Configuration.secret_key = api_token
 
-    async def create_payment(self, amount: int, description: str, test: bool = False) -> PaymentData:
+    async def create_payment(
+            self,
+            amount: int,
+            description: str,
+            save_payment_method_id: bool = True,
+            payment_method_id: str | None = None,
+            test: bool = False
+    ) -> PaymentData:
         data = {
             "amount": {
                 "value": amount,
@@ -56,8 +64,12 @@ class YooKassaService(YooKassaServiceABC):
             },
             "test": test
         }
+        if payment_method_id:
+            data.update(payment_method_id=payment_method_id)
+        elif save_payment_method_id:
+            data.update(save_payment_method_id=save_payment_method_id)
 
-        payment = Payment.create(data)
+        payment = await Payment.create(data)
 
         payment_data = json.loads(payment.json())
         payment_id = payment_data['id']
@@ -65,3 +77,6 @@ class YooKassaService(YooKassaServiceABC):
         return PaymentData(
             id=payment_id, url=payment_url
         )
+
+    async def cancel_payment(self, payment_id: str):
+        return await Payment.cancel(payment_id)

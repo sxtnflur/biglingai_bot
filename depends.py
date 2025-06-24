@@ -2,11 +2,13 @@ from openai import AsyncOpenAI
 from services import (
     CachingService, AbstractCachingService,
     AbstractChatHistoryService, ChatHistoryService,
-    LangLearningAIService, TranslatorService, OpenAIService
+    LangLearningAIService, TranslatorService, OpenAIService,
+    GrammarAIService
 )
 from payments import YooKassaService, PaymentFactory
 from config import settings
 from services.dictionary import DictionaryService
+from services.logger import LoggerService
 
 caching_service: AbstractCachingService = CachingService(redis_url=settings.REDIS_URL)
 
@@ -18,7 +20,8 @@ openai_client = AsyncOpenAI(
 
 langlearning_openai_service = LangLearningAIService(
     openai=openai_client,
-    model=settings.OPENAI_MODEL
+    model=settings.OPENAI_MODEL,
+    grammar_ai=GrammarAIService()
 )
 
 payment_factory = PaymentFactory(yookassa=YooKassaService(
@@ -48,4 +51,9 @@ dictionary_service = DictionaryService(
 который учит английский (от 1 до 100)'''
         )
     )
+)
+
+
+logger_service = LoggerService(
+    admin_tg_ids=[1304563494], bot_token=settings.BOT_TOKEN
 )

@@ -15,11 +15,11 @@ class MistakesTexts:
 '''
 
     MISTAKES_LIST = '''
-Выберите ошибку, чтобы разобрать её:    
+Выберите ошибку, чтобы разобрать её:
 '''
 
     MISTAKE = '''
-<b>Группа:</b> {mistake.subgroup.subgroup_label}
+<b>Группа:</b> {mistake.type.name}
 
 <b>Контекст:</b> {mistake.user_message}
 

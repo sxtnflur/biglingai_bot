@@ -148,3 +148,8 @@ RETURNING credits, sub_end
         return await self.__db.scalar(
             select(User.special_ref_on_moderation).filter(User.id == user_tid)
         )
+
+    async def update_user(self, user_tid: int, **updates) -> None:
+        await self.__db.execute(
+            update(User).filter(User.id == user_tid).values(**updates)
+        )

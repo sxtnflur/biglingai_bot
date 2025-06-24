@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class PaymentsService:
     def __init__(self, db: AsyncSession):
         self.__db = db
+        self.subs_service = SubsService()
 
     async def save_payment(
         self,
@@ -41,27 +42,19 @@ class PaymentsService:
         )
         if not payment:
             raise Exception('Платеж "{}" не найден'.format(order_id))
-
-        sub = SubsService().get_sub(payment.sub_id)
-        sub_end = await self.__db.scalar(
-            update(models.User)
-            .filter(models.User.id == payment.user_id)
-            .values(sub_end=case(
-                (and_(
-                    models.User.sub_end.isnot(None),
-                    models.User.sub_end >= func.now()
-                ), models.User.sub_end + timedelta(days=sub.days)),
-                else_=func.now() + timedelta(days=sub.days)
-            ))
-            .returning(models.User.sub_end)
+        sub = await self.subs_service.get_sub(payment.sub_id)
+        sub_end = await self.subs_service.create_or_increase_sub_by_days(
+            days=sub.days, user_id=payment.user_id, db=self.__db
         )
         user = await self.__db.scalar(
             select(models.User).filter(models.User.id == payment.user_id)
         )
-        await RefService(self.__db).on_user_paid(payment.user_id, payment.amount, bot=bot)
+        await RefService(self.__db).on_user_paid(
+            payment.user_id, payment.amount, sub_id=payment.sub_id, bot=bot
+        )
         return SubPaymentResponse(
             sub_end=sub_end,
-            sub=sub,
             payment=Payment.model_validate(payment),
-            user=user
+            user=user,
+            sub=sub
         )

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from schemas.subs import CreditsPack, Sub
 
 
@@ -55,9 +57,26 @@ class SubsTexts:
         ))
 
     @staticmethod
-    def subs(subs: list[Sub]):
-        return SubsTexts.SUBS + '\n\n' + '\n'.join(list(map(
+    def subs(
+        subs: list[Sub],
+        current_sub_end: datetime | None = None,
+        has_autopayment: bool = False,
+        autopayment_duration: timedelta | None = None
+    ):
+        text = ''
+        if current_sub_end:
+            if has_autopayment:
+                text += f'<b>Следующее автосписание произойдет через:</b> ' \
+                        f'<code>{(datetime.now() - current_sub_end).days}</code> дней\n' \
+                        f'<i>Чтобы отменить автосписание, нажмите кнопку "Отменить автосписание"</i>\n\n' \
+                        f'Автосписание по вашей текущей подписке происходит каждые {autopayment_duration.days} дней'
+            else:
+                text += f'<b>Ваша текущая подписка закончится через:</b> ' \
+                        f'<code>{(datetime.now() - current_sub_end).days}</code> дней'
+
+        text += SubsTexts.SUBS + '\n\n' + '\n'.join(list(map(
             lambda x: SubsTexts.EVERY_SUB.format(sub=x) + (
                 ' <i>(на {}% выгоднее)</i>'.format(x.sale) if x.sale else ''
             ), subs
         )))
+        return text

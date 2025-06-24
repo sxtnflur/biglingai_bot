@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from pydantic import BaseModel
 
@@ -11,6 +11,10 @@ class User(BaseModel):
     credits: int
     sub_end: datetime | None = None
     paid_refs_percent: int | None = None
+
+    autopayment_duration: timedelta | None = None
+    is_autopayment: bool = False
+
 
     class Config:
         from_attributes = True

@@ -20,7 +20,6 @@ async def ref(
     ref_info = await RefService(db).get_user_ref_info(user_tid=call.from_user.id, bot=call.bot)
     if ref_info.paid_refs_percent:
         text = RefTexts.special_main(
-            ref_link=ref_info.ref_link,
             balance=ref_info.paid_refs_balance,
             percent=ref_info.paid_refs_percent,
             paid_refs=ref_info.count_paid_refs
@@ -28,17 +27,13 @@ async def ref(
         is_special = True
     else:
         text = RefTexts.main(
-            credits_for_ref=ref_info.credits_for_ref,
-            credits_for_paid_ref=ref_info.credits_for_paid_ref,
-            ref_link=ref_info.ref_link,
             count_refs=ref_info.count_refs,
-            count_paid_refs=ref_info.count_paid_refs,
-            got_credits_from_refs=ref_info.got_credits_from_refs
+            count_paid_refs=ref_info.count_paid_refs
         )
         is_special = False
 
     await call.message.edit_text(
-        text, reply_markup=RefKeyboards.main(is_special=is_special)
+        text, reply_markup=RefKeyboards.main(is_special=is_special, ref_link=ref_info.ref_link)
     )
 
 

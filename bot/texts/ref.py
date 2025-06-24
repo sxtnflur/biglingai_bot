@@ -1,25 +1,20 @@
+from datetime import datetime
 
 
 class RefTexts:
     MAIN = '''
-<b>Приглашай друзей и получай кредиты бесплатно!</b>
-<i>1 друг = {} кредитов
-1 оплативший друг = {} кредитов</i>
+<b>Приглашай друзей и получай подписки бесплатно!</b>
 
-<b>📎 Твоя реферальная ссылка:</b>
-<code>{}</code>
+<i>С каждой покупки подписки твоего приглашенного друга ты получишь 50% от его подписки бесплатно</i>
+<blockquote>Например: Твой друг купил подписку на 30 дней -> Ты получаешь подписку на 15 дней</blockquote>
 
 <b>Приведено:</b> <code>{}</code>
 <b>Оплативших:</b> <code>{}</code>
-<b>Заработано кредитов:</b> <code>{}</code>
 '''
 
     SPECIAL_MAIN = '''
 <b>Вы учавствуете в специальной реферальной программе!</b>
 <i>Приглайшайте рефералов и получайте процент от их первой оплаты</i> 💰
-
-<b>📎 Ваша реферальная ссылка:</b>
-<code>{}</code>
 
 <b>Ваш баланс:</b> <code>{}</code>
 <b>Ваш процент от оплаты реферала:</b> <code>{}</code>
@@ -35,8 +30,8 @@ class RefTexts:
     REF_PAID_NOTIFICATION = '''
 Ваш реферал <b><a href="https://t.me/{username}">{full_name}</a></b> произвел оплату
 
-<b>Вы получили:</b> <code>{add_credits}</code> кредитов
-<b>Всего кредитов:</b> <code>{all_credits}</code>
+<b>Ваша подписка увеличена на:</b> <code>{days}</code> дней
+<b>Подписка закончится:</b> <code>{sub_end}</code>
 '''
 
     REF_SPECIAL_PAID_NOTIFICATION = '''
@@ -82,21 +77,19 @@ class RefTexts:
 
     @staticmethod
     def main(
-        credits_for_ref: int, credits_for_paid_ref: int,
-        ref_link: str, count_refs: int,
-        count_paid_refs: int, got_credits_from_refs: int
+        count_refs: int,
+        count_paid_refs: int
     ) -> str:
         return RefTexts.MAIN.format(
-            credits_for_ref, credits_for_paid_ref, ref_link,
-            count_refs, count_paid_refs, got_credits_from_refs
+            count_refs, count_paid_refs
         )
 
     @staticmethod
     def special_main(
-        ref_link: str, balance: int, percent: int, paid_refs: int
+        balance: int, percent: int, paid_refs: int
     ):
         return RefTexts.SPECIAL_MAIN.format(
-            ref_link, balance, percent, paid_refs
+            balance, percent, paid_refs
         )
 
     @staticmethod
@@ -113,9 +106,9 @@ class RefTexts:
         )
 
     @staticmethod
-    def ref_paid_notification(full_name: str, username: str | None, add_credits: int, all_credits: int):
+    def ref_paid_notification(full_name: str, username: str | None, days: int, sub_end: datetime):
         return RefTexts.REF_PAID_NOTIFICATION.format(
-            username=username, full_name=full_name, add_credits=add_credits, all_credits=all_credits
+            username=username, full_name=full_name, days=days, sub_end=sub_end.strftime('%H:%M %d.%m.%Y')
         )
 
     @staticmethod

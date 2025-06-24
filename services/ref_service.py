@@ -11,14 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, load_only
 from schemas.users import User as UserSchema
 from typing_extensions import Literal
-
-credits_for_ref = 50
-credits_for_paid_ref = 1000
+from .subs_service import SubsService
 
 
 class RefService:
     def __init__(self, db: AsyncSession):
         self.__db = db
+        self.subs_service = SubsService()
 
     async def create_ref_link(self, user_tid: int, bot: Bot):
         return await create_start_link(
@@ -35,31 +34,31 @@ class RefService:
 
                 if ref_user_id == user_id:
                     return
-
-                new_credits = await self.__db.scalar(
-                    update(models.User)
-                    .filter(models.User.id == ref_user_id)
-                    .values(
-                        credits=models.User.credits + credits_for_ref,
-                        credits_from_refs=models.User.credits_from_refs + credits_for_ref
-                    )
-                    .returning(models.User.credits)
-                )
-                await bot.send_message(
-                    ref_user_id,
-                    text=RefTexts.ref_notif(
-                        full_name=user_full_name,
-                        username=user_username,
-                        add_credits=credits_for_ref,
-                        all_credits=new_credits
-                    ),
-                    reply_markup=RefKeyboards.on_ref_event()
-                )
-                return DecodedRefInfo(invited_by_id=ref_user_id, credits=credits_for_ref)
+                #
+                # new_credits = await self.__db.scalar(
+                #     update(models.User)
+                #     .filter(models.User.id == ref_user_id)
+                #     .values(
+                #         credits=models.User.credits + credits_for_ref,
+                #         credits_from_refs=models.User.credits_from_refs + credits_for_ref
+                #     )
+                #     .returning(models.User.credits)
+                # )
+                # await bot.send_message(
+                #     ref_user_id,
+                #     text=RefTexts.ref_notif(
+                #         full_name=user_full_name,
+                #         username=user_username,
+                #         add_credits=credits_for_ref,
+                #         all_credits=new_credits
+                #     ),
+                #     reply_markup=RefKeyboards.on_ref_event()
+                # )
+                return DecodedRefInfo(invited_by_id=ref_user_id)
         except:
             return
 
-    async def on_user_paid(self, user_tid: int, amount: int, bot: Bot) -> int | None:
+    async def on_user_paid(self, user_tid: int, amount: int, sub_id: int, bot: Bot) -> None:
         has_payments = await self.__db.scalar(
             select(exists().where(models.Payment.user_id == user_tid))
         )
@@ -123,29 +122,18 @@ class RefService:
                 reply_markup=RefKeyboards.on_ref_event()
             )
         else:
-            stmt = (
-                stmt.values(
-                    credits_from_refs=case(
-                        (models.User.paid_refs_percent.is_(None),
-                         models.User.credits_from_refs + credits_for_paid_ref),
-                        else_=models.User.credits_from_refs
-                    ),
-                    credits=case(
-                        (models.User.paid_refs_percent.is_(None),
-                         models.User.credits + credits_for_paid_ref),
-                        else_=models.User.credits
-                    )
-                ).returning(models.User.credits)
+            sub = await self.subs_service.get_sub(sub_id)
+            increase_days = sub.days // 2
+            sub_end = await self.subs_service.create_or_increase_sub_by_days(
+                days=increase_days, user_id=user_tid, db=self.__db
             )
-            credits = await self.__db.scalar(stmt)
-
             await bot.send_message(
                 refferer.id,
                 text=RefTexts.ref_paid_notification(
                     full_name=refferer.full_name,
                     username=refferer.username,
-                    add_credits=credits_for_paid_ref,
-                    all_credits=credits
+                    days=increase_days,
+                    sub_end=sub_end
                 ),
                 reply_markup=RefKeyboards.on_ref_event()
             )
@@ -181,9 +169,6 @@ class RefService:
             ref_link=ref_link,
             count_refs=count_refs,
             count_paid_refs=count_paid_refs,
-            got_credits_from_refs=user.credits_from_refs,
-            credits_for_ref=credits_for_ref,
-            credits_for_paid_ref=credits_for_paid_ref,
             paid_refs_percent=user.paid_refs_percent,
             paid_refs_balance=user.paid_refs_balance,
             special_ref_on_moderation=user.special_ref_on_moderation

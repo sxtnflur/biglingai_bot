@@ -1,4 +1,4 @@
-from .mistakes import Mistake
+from .mistakes import Mistake, MistakeType
 from .users import User
 from .payments import PaymentType, Payment
 from .dictionary import DictionaryWord, UserDictionaryWord

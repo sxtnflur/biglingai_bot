@@ -1,4 +1,4 @@
 from .caching import CachingService, AbstractCachingService
 from .chat_history import ChatHistoryService, AbstractChatHistoryService
-from .ai import LangLearningAIService, OpenAIService
+from .ai import LangLearningAIService, OpenAIService, GrammarAIService
 from .translator import TranslatorService

@@ -4,6 +4,12 @@ import random
 from pydantic import BaseModel
 
 
+class MistakeType(BaseModel):
+    key: str
+    name: str
+    class Config: from_attributes = True
+
+
 class AIAnswer(BaseModel):
     text: str
     audio: bytes | None = None
@@ -142,6 +148,7 @@ class AnswerTalkingIndications(BaseModel):
 
 class AnswerTalkingResult(BaseModel):
     answer: 'AIAnswer'
+    correct: str
     indications: list['Mistake'] | None = None
 
 
@@ -158,9 +165,13 @@ class MistakeGroup(StrEnum):
     spelling = auto()
 
 
+
+
 class Mistake(BaseModel):
-    group: MistakeGroup
-    subgroup: MistakeSubGroup
+    # group: MistakeGroup
+    # subgroup: MistakeSubGroup
+    group: str
+    type: str
     incorrect: str
     correct: str
     explanation: str

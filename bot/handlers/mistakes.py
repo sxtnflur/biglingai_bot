@@ -25,7 +25,7 @@ router.callback_query.middleware(DatabaseMiddleware())
 
 
 @router.callback_query(MistakesListCallback.filter())
-async def mistakes(
+async def mistakes_types_list_handler(
     call: CallbackQuery,
     callback_data: MistakesListCallback,
     db: AsyncSession
@@ -60,15 +60,23 @@ async def mistake_group(
     db: AsyncSession
 ):
     mistakes = await MistakesService(db).get_mistakes(
-        user_id=call.from_user.id, by_subgroup=MistakeSubGroup(callback_data.group),
+        user_id=call.from_user.id, by_type_key=callback_data.group,
         offset=callback_data.page * callback_data.limit,
         limit=callback_data.limit
     )
+    if not mistakes:
+        await call.answer('В этой группе не осталось ошибок')
+        await mistakes_types_list_handler(
+            call=call,
+            callback_data=MistakesListCallback(),
+            db=db
+        )
+        return
     await call.message.edit_text(
         text=MistakesTexts.MISTAKES_LIST,
         reply_markup=MistakesKeyboards.mistakes_list(
             mistakes=mistakes,
-            group=MistakeSubGroup(callback_data.group),
+            group=callback_data.group,
             limit=callback_data.limit,
             page=callback_data.page
         )
@@ -84,7 +92,7 @@ async def get_mistake(
     mistake = await MistakesService(db).get_mistake(callback_data.id)
     await call.message.edit_text(
         MistakesTexts.mistake(mistake),
-        reply_markup=MistakesKeyboards.mistake(group=mistake.subgroup, mistake_id=callback_data.id)
+        reply_markup=MistakesKeyboards.mistake(type_key=mistake.type.key, mistake_id=callback_data.id)
     )
 
 
@@ -109,18 +117,18 @@ async def delete_mistake(
         else:
             return
 
-        await call.message.edit_text(f'Ошибка <b>{mistake.incorrect}</b> удалена')
+        await call.answer(f'Ошибка "{mistake.incorrect}" удалена')
         await mistake_group(
-            call=call, callback_data=MistakeGroupListCallback(group=mistake.subgroup),
+            call=call, callback_data=MistakeGroupListCallback(group=mistake.type_key),
             db=db
         )
 
 
 async def create_train_mistake_group(
-    user_id: int, group: MistakeSubGroup, db: AsyncSession
+    user_id: int, group: str, db: AsyncSession
 ) -> dict:
     random_mistake = await MistakesService(db).get_random_mistake(
-        user_id=user_id, by_group=group
+        user_id=user_id, by_type_key=group
     )
     prompt = (f'Придумай задание для того, чтобы отточить ошибки из группы {random_mistake.subgroup.subgroup_label}. '
               f'Пример ошибки: {random_mistake.user_message}. '
@@ -150,7 +158,7 @@ async def train_mistake_group(
 
     message_data = await create_train_mistake_group(
         user_id=call.from_user.id,
-        group=MistakeSubGroup(callback_data.group),
+        group=callback_data.group,
         db=db
     )
     await call.message.answer(**message_data)
@@ -201,14 +209,10 @@ async def train_mistake_answer(
 
     message_data = await create_train_mistake_group(
         user_id=call.from_user.id,
-        group=MistakeSubGroup(callback_data.group),
+        group=callback_data.group,
         db=db
     )
     await call.message.answer(**message_data)
-
-
-
-
 
 
 @router.callback_query(MistakesListByDialogCallback.filter())

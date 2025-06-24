@@ -140,10 +140,14 @@ async def chatting(
         chat_type=CHAT_TYPE
     )
     dialog_uuid = None
-
+    print(f"{answer.result.indications=}")
     if answer.result.indications:
         dialog_uuid = await state.get_value('dialog_uuid')
-        await MistakesService(db).save_mistakes(
+        mistakes_service = MistakesService(db)
+        await mistakes_service.add_mistake_groups_if_not_exist(
+            list(map(lambda x: {'key': x.type, 'name': x.group}, answer.result.indications))
+        )
+        await mistakes_service.save_mistakes(
             user_id=message.from_user.id,
             dialog_uuid=dialog_uuid,
             mistakes=answer.result.indications,
@@ -152,7 +156,7 @@ async def chatting(
 
     reaction = get_reaction(len(answer.result.indications) if answer.result.indications else 0)
     if reaction:
-        await message.react([reaction], is_big=True)
+        await message.react([reaction], is_big=False)
 
     if answer.end_talking:
         await state.clear()

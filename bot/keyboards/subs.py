@@ -35,18 +35,35 @@ class SubsKeyboards:
         )]])
 
     @staticmethod
-    def subs(subs: list[Sub]):
+    def subs(subs: list[Sub], has_autopayment: bool = False):
         inl_kb = BaseKeyboards.create_list_kb(
             objs=subs,
             get_btn=lambda sub: InlineKeyboardButton(
-                text='{} дней'.format(sub.days),
+                text='{} [{} дней]'.format(sub.name, sub.days),
                 callback_data=BuySubCallback(id=sub.id).pack()
             ),
             width=1
         )
+        if has_autopayment:
+            inl_kb.append([
+                InlineKeyboardButton(
+                    text='Отменить автопродление',
+                    callback_data='cancel-autopayment'
+                )
+            ])
         return InlineKeyboardMarkup(inline_keyboard=inl_kb + [[InlineKeyboardButton(
             text='Назад', callback_data='start'
         )]])
+
+    @staticmethod
+    def cancel_autopayment():
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text='Да', callback_data='cancel-autopayment-2'
+            ), InlineKeyboardButton(
+                text='Нет - вернуться назад', callback_data='subs'
+            )]
+        ])
 
 
     @staticmethod

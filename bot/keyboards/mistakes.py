@@ -24,8 +24,8 @@ class MistakesKeyboards:
         return BaseKeyboards.create_scrolling_kb(
             page=page, callback_data=MistakesListCallback,
             get_btn=lambda m: InlineKeyboardButton(
-                text='{} ({})'.format(m.group.subgroup_label, m.count_mistakes),
-                callback_data=MistakeGroupListCallback(group=m.group.value).pack()
+                text='{} ({})'.format(m.type.name, m.count_mistakes),
+                callback_data=MistakeGroupListCallback(group=m.type.key).pack()
             ),
             limit=limit, objs=groups,
             additional_btns=[[InlineKeyboardButton(text=BaseTexts.BACK, callback_data='start')]]
@@ -78,7 +78,7 @@ class MistakesKeyboards:
         mistakes: list[MistakeSchema],
         page: int,
         limit: int,
-        group: MistakeSubGroup
+        group: str
     ) -> InlineKeyboardMarkup:
         def get_btn(x: MistakeSchema) -> InlineKeyboardButton:
             return InlineKeyboardButton(
@@ -90,11 +90,11 @@ class MistakesKeyboards:
             get_btn=get_btn,
             limit=limit,
             objs=mistakes,
-            pag_btn_additional_kwargs=dict(group=group.value),
+            pag_btn_additional_kwargs=dict(group=group),
             additional_btns=[[
                 InlineKeyboardButton(
                     text=MistakesTexts.WORK_OUT_MISTAKE_BUTTON,
-                    callback_data=TrainMistakeGroupCallback(group=group.value).pack()
+                    callback_data=TrainMistakeGroupCallback(group=group).pack()
                 )
             ], [InlineKeyboardButton(
                 text=BaseTexts.BACK,
@@ -132,9 +132,9 @@ class MistakesKeyboards:
         )
 
     @staticmethod
-    def mistake(group: MistakeSubGroup, mistake_id: int):
+    def mistake(type_key: str, mistake_id: int):
         btn_back = BaseKeyboards.create_btn_back(
-            callback_data=MistakeGroupListCallback(group=group.value).pack()
+            callback_data=MistakeGroupListCallback(group=type_key).pack()
         )
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
@@ -165,18 +165,18 @@ class MistakesKeyboards:
 
 
     @staticmethod
-    def train_mistake_choice(choices: list[ResChoice], mistake_id: int, group: MistakeSubGroup) -> InlineKeyboardMarkup:
+    def train_mistake_choice(choices: list[ResChoice], mistake_id: int, group: str) -> InlineKeyboardMarkup:
         btns = BaseKeyboards.create_list_kb(
             get_btn=lambda x: InlineKeyboardButton(
                 text=str(x.id) + '️⃣ ',
                 callback_data=TrainMistakeGroupAnswerCallback(
                     is_right=x.is_right, mistake_id=mistake_id,
-                    group=group.value
+                    group=group
                 ).pack()
             ),
             objs=choices,
             width=4
         )
         return InlineKeyboardMarkup(inline_keyboard=btns + [[InlineKeyboardButton(
-            text=MistakesTexts.EXIT_BUTTON, callback_data=MistakeGroupListCallback(group=group.value).pack()
+            text=MistakesTexts.EXIT_BUTTON, callback_data=MistakeGroupListCallback(group=group).pack()
         )]])

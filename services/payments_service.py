@@ -42,7 +42,7 @@ class PaymentsService:
         )
         if not payment:
             raise Exception('Платеж "{}" не найден'.format(order_id))
-        sub = await self.subs_service.get_sub(payment.sub_id)
+        sub = self.subs_service.get_sub(payment.sub_id)
         sub_end = await self.subs_service.create_or_increase_sub_by_days(
             days=sub.days, user_id=payment.user_id, db=self.__db
         )

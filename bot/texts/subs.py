@@ -64,15 +64,15 @@ class SubsTexts:
         autopayment_duration: timedelta | None = None
     ):
         text = ''
-        if current_sub_end and current_sub_end > datetime.utcnow():
+        if current_sub_end and current_sub_end >= datetime.utcnow():
             if has_autopayment:
                 text += f'<b>Следующее автосписание произойдет через:</b> ' \
-                        f'<code>{(datetime.now() - current_sub_end).days}</code> дней\n' \
+                        f'<code>{(datetime.utcnow() - current_sub_end).days}</code> дней\n' \
                         f'<i>Чтобы отменить автосписание, нажмите кнопку "Отменить автосписание"</i>\n\n' \
                         f'Автосписание по вашей текущей подписке происходит каждые {autopayment_duration.days} дней\n\n'
             else:
                 text += f'<b>Ваша текущая подписка закончится через:</b> ' \
-                            f'<code>{(datetime.now() - current_sub_end).days}</code> дней\n\n'
+                            f'<code>{(datetime.utcnow() - current_sub_end).days}</code> дней\n\n'
 
         text += SubsTexts.SUBS + '\n\n' + '\n'.join(list(map(
             lambda x: SubsTexts.EVERY_SUB.format(sub=x) + (

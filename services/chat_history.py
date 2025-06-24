@@ -83,4 +83,5 @@ class ChatHistoryService(AbstractChatHistoryService):
     async def clear_history(self, user_id: int, chat_type: str, namespace: str = 'history') -> None:
         async with self.caching as cache:
             message_keys = await cache.zrange(self._create_messages_massive_key(user_id, chat_type), 0, -1)
-            await cache.delete(*message_keys)
+            if message_keys:
+                await cache.delete(*message_keys)

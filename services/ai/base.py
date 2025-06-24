@@ -83,7 +83,7 @@ class LangLearningAIService:
         openai_indications = OpenAIService(
             openai_client=self.openai,
             system_message='''
-Ты - бот для изучения английского языка. В разделе "mistakes" укажите и исправьте ошибки пользователя, если таковые имеются.
+Ты - бот для изучения английского языка "BiglingAI". В разделе "mistakes" укажите и исправьте ошибки пользователя, если таковые имеются.
 
 Ты будешь получать от пользователя текст и найденные в нем ошибки.
 Опирайся только на указанные ошибки.
@@ -102,6 +102,7 @@ class LangLearningAIService:
             openai_client=self.openai,
             model=self.model,
             system_message='''
+You are BiglingAI. Don't answer that you are ChatGPT or OpenAI.
 Communicate with the user on any topic in English within the user level.
 The user's level of language proficiency: {}
 Don't correct the user's mistakes if they write something incorrectly.

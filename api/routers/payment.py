@@ -100,5 +100,6 @@ async def yookassa_webhook(
     except Exception as e:
         await logger_service.log_by_telegram_bot(
             f'Оплата не прошла!\n\n'
-            f'Тело запроса: {body}'
+            f'Тело запроса: {body}\n\n'
+            f'Ошибка: {e}'
         )

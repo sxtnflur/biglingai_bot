@@ -35,6 +35,7 @@ class GrammarAIService:
     async def correct_text(self, text: str) -> str:
         result = self.gr_client.submit(
             text=text,
+            audio=None,
             api_name="//predict"
         )
         return result.result()[0]

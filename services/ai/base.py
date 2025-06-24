@@ -80,8 +80,6 @@ class LangLearningAIService:
         messages: list[ChatCompletionMessageParam] | None = None,
         response_type: Literal['text'] = 'text'
     ) -> TalkingResponse:
-        grammar_resp = await self.grammar_ai.process_text(user_text)
-        print(f'{grammar_resp=}')
         openai_indications = OpenAIService(
             openai_client=self.openai,
             system_message='''
@@ -98,56 +96,7 @@ class LangLearningAIService:
     "explanation": "Дай подробное разъяснение ошибки на основе полученные данных на русском языке",
     "example": примеры на других предложениях
 }
-'''.strip(),
-#             system_message='''
-# Вы - бот для изучения английского языка. В разделе "mistakes" укажите и исправьте ошибки пользователя, если таковые имеются.
-# Если ошибок нет, верните пустой список. Не добавляйте ничего к указаниям, в которых у пользователя нет ошибки.
-# Работай только с последним сообщением пользователя, но учитывай и контекс диалога.
-# Пишите по-русски.
-# Для каждой ошибки определи subgroup на основании следующих данных:
-# Группы ошибок: grammar / vocabulary / syntax / spelling
-# Далее перечисляю подгруппы для каждой группы:
-# 1. grammar
-# Ошибки в структуре языка, влияющие на правильность построения предложений.
-#
-# Подгруппы:
-# tense — неправильное использование времён (past, present, future, perfect).
-# subject_verb_agreement — несогласование подлежащего и глагола (She go вместо She goes).
-# articles — неверное поставили или не поставили артикль (a, an, the)
-# prepositions — ошибки в использовании предлогов (in, on, at и др.).
-# auxiliary_verbs — отсутствие вспомогательных глаголов (He not working).
-# negation — неправильное отрицание (He don’t like).
-#
-# 2. vocabulary
-# Ошибки в словарном запасе и уместности лексики.
-#
-# Подгруппы:
-# word_choice — выбор неправильного слова (funny вместо fun).
-# false_friends — похожие слова, но с разным значением (actual ≠ актуальный).
-# collocations — неверные словосочетания (strong rain вместо heavy rain).
-# idioms — искажение идиом или фразеологизмов.
-# register_formality — неправильный стиль речи (разговорный в формальном контексте и наоборот).
-#
-# 3. syntax
-# Ошибки в порядке слов и структуре предложений.
-#
-# Подгруппы:
-# word_order — неправильный порядок слов (She only eats vegetables vs Only she eats vegetables).
-# question_formation — ошибки в построении вопросов (You like it?).
-# relative_clauses — сложные предложения с who, which, that.
-# missing_elements — пропущенные элементы: подлежащее, сказуемое и др.
-#
-# 4. spelling
-# Ошибки в написании слов и расстановке знаков препинания.
-#
-# Подгруппы:
-# spelling — ошибки в написании слов.
-# capitalization — ошибки в использовании заглавных букв.
-# punctuation — отсутствие запятых, лишние точки и др.
-#
-# Уровень владения языком пользователя: {}
-# '''.strip().format(user_lang_level),
-            model=self.model
+'''.strip(), model=self.model
         )
         openai_main_dialog = OpenAIService(
             openai_client=self.openai,
@@ -175,21 +124,15 @@ In "end_talking" set true if the dialog should be completed.
         if not resp_main_dialog.is_right_lang:
             return TalkingResponse(is_right_lang=False)
 
+        correct = user_text
         if messages:
+            grammar_resp = await self.grammar_ai.process_text(user_text)
+            print(f'{grammar_resp=}')
+            correct = grammar_resp.correct
             resp_indications = await openai_indications.send_text_get_schema(
                 schema=AnswerTalkingIndications,
                 prompt=grammar_resp.model_dump_json(),
                 messages=messages,
-                # messages=[{
-                #     'role': 'user', 'content': 'Hallo! How it going?'
-                # }, {
-                #     'role': 'assistant', 'content': json.dumps(dict(indications=[
-                #         dict(comment='"Hallo" - Правильное написание: Hello',
-                #              subgroup='spelling'),
-                #         dict(comment='"How it going? - Нужен глагол "to be" перед подлежащим. Правильное написание: "How is it going?"',
-                #              subgroup='question_formation')
-                #     ]))
-                # }] + messages,
                 temperature=0.3
             )
             mistakes = resp_indications.mistakes
@@ -200,7 +143,7 @@ In "end_talking" set true if the dialog should be completed.
         if response_type == 'text':
             result = AnswerTalkingResult(
                 answer=AIAnswer(text=resp_main_dialog.answer),
-                correct=grammar_resp.correct,
+                correct=correct,
                 indications=mistakes
             )
             return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang,

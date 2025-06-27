@@ -13,6 +13,7 @@ from services.logger import LoggerService
 from services.payments_service import PaymentsService
 from services.ref_service import RefService
 from services.subs_service import SubsService
+from services.ai import Elevenlabs
 
 caching_service: AbstractCachingService = CachingService(redis_url=settings.REDIS_URL)
 
@@ -22,10 +23,15 @@ openai_client = AsyncOpenAI(
     api_key=settings.OPENAI_KEY, base_url=settings.OPENAI_BASE_URL
 )
 
+speacker_ai = Elevenlabs(
+    api_key=settings.ELEVENLABS_API_KEY, model=settings.ELEVENLABS_MODEL
+)
+
 langlearning_openai_service = LangLearningAIService(
     openai=openai_client,
     model=settings.OPENAI_MODEL,
-    grammar_ai=GrammarAIService()
+    grammar_ai=GrammarAIService(),
+    speacker_ai=speacker_ai
 )
 
 payment_factory = PaymentFactory(yookassa=YooKassaService(
@@ -57,16 +63,38 @@ dictionary_service = DictionaryService(
     )
 )
 
-
 logger_service = LoggerService(
-    admin_tg_ids=[1304563494], bot_token=settings.BOT_TOKEN
+    admin_tg_ids=[-4805765332], bot_token=settings.BOT_TOKEN
 )
 
-scheduler = SchedulerService(
-    payment_factory=payment_factory,
-    logger_service=logger_service
-)
 
-subs_service = SubsService(scheduler_service=scheduler)
-ref_service = RefService(subs_service=subs_service)
-payments_service = PaymentsService(subs_service=subs_service, ref_service=ref_service)
+def get_subs_service():
+    return SubsService()
+
+
+subs_service = get_subs_service()
+
+
+def get_ref_service():
+    return RefService(subs_service=get_subs_service())
+
+
+ref_service = get_ref_service()
+
+
+def get_payments_service():
+    return PaymentsService(subs_service=get_subs_service(), ref_service=get_ref_service())
+
+
+payments_service = get_payments_service()
+
+
+def get_scheduler():
+    return SchedulerService(
+        payment_factory=payment_factory,
+        logger_service=logger_service,
+        payments_service=get_payments_service()
+    )
+
+
+scheduler = get_scheduler()

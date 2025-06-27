@@ -1,4 +1,5 @@
 from pydantic.v1 import BaseSettings
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -19,6 +20,12 @@ class Settings(BaseSettings):
 
     YOOKASSA_API_KEY: str
     YOOKASSA_SHOP_ID: int
+
+    BASE_DIR: str = Path(__file__).resolve(strict=True).parent.__str__()
+
+    ELEVENLABS_API_KEY: str
+    ELEVENLABS_MODEL: str
+    ELEVENLABS_DEFAULT_VOICE_ID: str
 
 
 settings = Settings(_env_file='.env')

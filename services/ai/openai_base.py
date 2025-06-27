@@ -54,12 +54,12 @@ class OpenAIService:
         return res.choices[0].message.content
 
     async def transcript_audio(
-        self, audio_path: str, model: str = 'whisper', prompt: str | NotGiven = NotGiven, **kwargs
+        self, audio_path: str, model: str | None = 'whisper', prompt: str | NotGiven = NotGiven, **kwargs
     ) -> str:
         with open(audio_path, 'rb') as audio_file:
             resp = await self._client.audio.transcriptions.create(
                 file=audio_file,
-                model=model,
+                model=model or self.default_model,
                 prompt=prompt
             )
         return resp.text

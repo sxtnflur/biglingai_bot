@@ -23,11 +23,17 @@ class PaymentMethod(BaseModel):
     title: str
 
 
+class PaymentAmount(BaseModel):
+    value: float
+    currency: str
+
+
 class WebhookObject(BaseModel):
     id: str
     status: str
     metadata: dict = {}
     payment_method: PaymentMethod | None = None
+    amount: PaymentAmount
 
 
 class WebhookPayload(BaseModel):
@@ -36,7 +42,8 @@ class WebhookPayload(BaseModel):
 
 
 async def process_pay(
-        order_id: str, db: AsyncSession, save_payment_method_id: str | None = None,
+        order_id: str, db: AsyncSession,
+        save_payment_method_id: str | None = None,
         payment_method_title: str | None = None
 ):
     bot = Bot(token=settings.BOT_TOKEN)
@@ -47,11 +54,11 @@ async def process_pay(
     if save_payment_method_id:
         await subs_service.add_autopayment_to_user(
             user_id=payment.user.id,
+            sub_id=payment.sub.id,
             payment_method_id=save_payment_method_id,
-            autopayment_duration=datetime.timedelta(days=payment.sub.days),
-            sub_end=payment.sub_end,
             db=db
         )
+        scheduler.autopayment_scheduler.add_job_to_user(payment.user.id, sub_end=payment.user.sub_end)
         text += '✅ Способ оплаты {} сохранен'.format(
             f'<i>{payment_method_title}</i>' if payment_method_title else ''
         )

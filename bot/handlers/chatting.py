@@ -1,10 +1,11 @@
+import os
 import random
 
 from aiogram import Router, F
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, Message, ReactionTypeUnion, ReactionTypeEmoji
+from aiogram.types import CallbackQuery, Message, ReactionTypeUnion, ReactionTypeEmoji, BufferedInputFile
 from bot.callbacks.chatting import SelectChattingTypeCallback
 from bot.keyboards.credits import CreditsKeyboards
 from bot.keyboards.mistakes import MistakesKeyboards
@@ -12,14 +13,16 @@ from bot.middlewares import DatabaseMiddleware
 from bot.texts.base import BaseTexts
 from bot.texts.chatting import ChattingTexts
 from bot.keyboards.chatting import ChattingKeyboards
+from bot.utils.media import save_voice_as_mp3
 from depends import langlearning_openai_service, chat_history_service
 from exceptions import CreditsOverException
-from schemas.chatting import DialogType
+from schemas.chatting import DialogType, TalkingResponse
 from services.mistakes_service import MistakesService
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 from bot import utils
+from typing_extensions import Literal
 
 router = Router()
 router.message.middleware(DatabaseMiddleware())
@@ -35,6 +38,34 @@ CHAT_TYPE = f'text-chatting'
 def get_reaction(count_mistakes: int) -> ReactionTypeUnion | None:
     if not count_mistakes:
         return utils.get_reaction_by_level(is_positive=True)
+
+
+async def send_ai_message(
+        answer: TalkingResponse, message: Message,
+        type_: Literal['text', 'audio', 'text-and-audio'
+]) -> None:
+    if answer.result.answer.audio:
+        if type_ == 'text-and-audio':
+            await message.answer_voice(
+                voice=BufferedInputFile(answer.result.answer.audio, filename='voice.mp3'),
+                caption=ChattingTexts.ai_answer(answer),
+                reply_markup=ChattingKeyboards.ai_answer()
+            )
+        elif type_ == 'audio':
+            await message.answer_voice(
+                voice=BufferedInputFile(answer.result.answer.audio, filename='voice.mp3'),
+                reply_markup=ChattingKeyboards.ai_answer()
+            )
+        else:
+            await message.answer(
+                ChattingTexts.ai_answer(answer),
+                reply_markup=ChattingKeyboards.ai_answer()
+            )
+    else:
+        await message.answer(
+            ChattingTexts.ai_answer(answer),
+            reply_markup=ChattingKeyboards.ai_answer()
+        )
 
 
 @router.callback_query(F.data == 'choose_mode:chatting')
@@ -71,8 +102,9 @@ async def chatting_mode_start(
     await state.clear()
     dialog_type = DialogType(callback_data.type)
     theme = dialog_type.random_theme
+
     answer = await langlearning_openai_service.send_text_talking(
-        'Hello!', theme=theme, dialog_type=dialog_type, response_type='text'
+        'Hello!', theme=theme, dialog_type=dialog_type, voice_over=True
     )
     try:
         await call.message.edit_text(
@@ -80,6 +112,10 @@ async def chatting_mode_start(
             reply_markup=None
         )
     except: pass
+
+    type_: Literal['text', 'audio', 'text-and-audio'] = 'text-and-audio'
+    await send_ai_message(answer, call.message, type_=type_)
+
     await call.message.answer(
         ChattingTexts.ai_answer(answer),
         reply_markup=ChattingKeyboards.ai_answer()
@@ -98,7 +134,7 @@ async def chatting_mode_start(
     )
 
 
-@router.message(ChattingStates.chatting, F.text)
+@router.message(ChattingStates.chatting, F.text | F.voice)
 async def chatting(
     message: Message, state: FSMContext,
     db: AsyncSession
@@ -112,18 +148,27 @@ async def chatting(
     dialog_type = DialogType(dialog_type)
     theme = data.get('theme')
 
-    answer = await langlearning_openai_service.send_text_talking(
-        message.text,
-        dialog_type=dialog_type,
-        theme=theme,
-        messages=messages,
-        response_type='text'
-    )
-    await message.answer(
-        ChattingTexts.ai_answer(answer),
-        parse_mode=ParseMode.HTML,
-        reply_markup=ChattingKeyboards.ai_answer()
-    )
+    if message.voice:
+        path_to_audio = await save_voice_as_mp3(message.voice)
+        answer = await langlearning_openai_service.send_audio_talking(
+            path_to_audio=path_to_audio,
+            dialog_type=dialog_type,
+            theme=theme,
+            messages=messages,
+            response_type='text'
+        )
+        os.remove(path_to_audio)
+    else:
+        answer = await langlearning_openai_service.send_text_talking(
+            message.text,
+            dialog_type=dialog_type,
+            theme=theme,
+            messages=messages,
+            response_type='text'
+        )
+    type_: Literal['text', 'audio', 'text-and-audio'] = 'text-and-audio'
+    await send_ai_message(answer=answer, message=message, type_=type_)
+
     if not await UsersService(db).do_paid_action(message.from_user.id, credits=1):
         await message.answer(
             BaseTexts.CREDITS_OVER,

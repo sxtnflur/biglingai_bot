@@ -18,6 +18,8 @@ class Sub(BaseModel):
     price: int
     sale: int | None = None
 
+    class Config: from_attributes = True
+
 
 class Payment(BaseModel):
     id: int

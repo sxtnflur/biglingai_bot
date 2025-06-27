@@ -1,10 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database import models
 from database.init_db import async_session
+from payments import PaymentData
+from services.payments_service import PaymentsServiceProtocol
+from sqlalchemy.dialects.postgresql import INTERVAL
 from .abc import AutopaymentSchedulerProtocol
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, Interval
 from sqlalchemy.orm import load_only
 from apscheduler.triggers.cron import CronTrigger
 
@@ -14,25 +17,41 @@ def get_job_id(user_id: int):
 
 
 class AutopaymentScheduler(AutopaymentSchedulerProtocol):
-    def __init__(self, scheduler: AsyncIOScheduler, payment_factory, logger_service):
+    def __init__(
+            self, scheduler: AsyncIOScheduler,
+            payment_factory, logger_service,
+            payments_service: PaymentsServiceProtocol
+    ):
         self.scheduler = scheduler
         self.payment_factory = payment_factory
         self.logger = logger_service
+        self.payments_service = payments_service
 
     async def do_pay(self, user_id: int):
         try:
             async with async_session() as session:
-                payment_method_id = await session.scalar(
+                result = await session.execute(
                     update(models.User)
                     .filter(models.User.id == user_id,
                             models.User.payment_method_id.isnot(None),
                             models.User.is_autopayment.is_(True),
-                            models.User.autopayment_duration.isnot(None))
+                            models.User.current_sub_id.isnot(None),
+                            models.Sub.id == models.User.current_sub_id)
                     .values(
-                        sub_end=func.coalesce(models.User.sub_end, func.now()) + models.User.autopayment_duration
+                        sub_end=(
+                                func.coalesce(models.User.sub_end, func.now()) +
+                                func.cast(f"{models.Sub.days} days", INTERVAL
+                            )
+                        )
                     )
-                    .returning(models.User.payment_method_id)
+                    .returning(models.User.payment_method_id, models.Sub.price,
+                               models.User.current_sub_id)
                 )
+                if not result: return
+                result = result.fetchone()
+                if not result: return
+                payment_method_id, price, current_sub_id = result
+
                 if not payment_method_id:
                     self.scheduler.remove_job(get_job_id(user_id))
                     await session.rollback()
@@ -41,11 +60,17 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                         f'так как у пользователя нет payment_method_id/is_autopayment/autopayment_duration'
                     )
                 else:
-                    await self.payment_factory.create_payment(
+                    payment_response: PaymentData = await self.payment_factory.create_payment(
+                        amount=price,
                         payment_method='yookassa',
                         payment_method_id=payment_method_id,
                         description='Автооплата',
                         save_payment_method_id=False
+                    )
+                    await self.payments_service.save_autopayment(
+                        db=session, user_tid=user_id,
+                        amount=price, sub_id=current_sub_id,
+                        order_id=payment_response.id
                     )
                     await session.commit()
         except Exception as e:
@@ -83,18 +108,19 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                 select(models.User)
                 .options(
                     load_only(
-                        models.User.id, models.User.autopayment_duration,
+                        models.User.id,
                         models.User.sub_end
                     )
                 )
                 .filter(
                     models.User.payment_method_id.isnot(None),
                     models.User.is_autopayment.is_(True),
-                    models.User.autopayment_duration.isnot(None)
+                    models.User.current_sub_id.isnot(None)
                 )
             )
 
         for user in users:
-            self.add_job_to_user(user_id=user.id, sub_end=user.sub_end)
+            self.add_job_to_user(user_id=user.id,
+                                 sub_end=datetime.utcnow() + timedelta(seconds=10))  # sub_end=user.sub_end)
 
         await self.logger.log_by_telegram_bot('Задачи на автооплаты установлены')

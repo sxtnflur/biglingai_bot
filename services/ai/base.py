@@ -4,6 +4,7 @@ from enum import Enum, auto
 
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
+from services.ai.elevenlabs_service import BaseAiSpeacker
 from services.ai.grammar import GrammarAIService
 from services.ai.openai_base import OpenAIService
 from pydantic import BaseModel
@@ -40,10 +41,12 @@ class ReadingRating(BaseModel):
 
 
 class LangLearningAIService:
-    def __init__(self, openai: AsyncOpenAI, model: str, grammar_ai: GrammarAIService):
+    def __init__(self, openai: AsyncOpenAI, model: str, grammar_ai: GrammarAIService,
+                 speacker_ai: BaseAiSpeacker):
         self.openai = openai
         self.model = model
         self.grammar_ai = grammar_ai
+        self.speacker_ai = speacker_ai
 
     async def choose_one_variant(
         self, prompt: str
@@ -78,7 +81,7 @@ class LangLearningAIService:
         dialog_type: DialogType = DialogType.SMALL_TALK,
         user_lang_level: Literal['A1', 'A2', 'A3'] = 'A1',
         messages: list[ChatCompletionMessageParam] | None = None,
-        response_type: Literal['text'] = 'text'
+        voice_over: bool = True
     ) -> TalkingResponse:
         openai_indications = OpenAIService(
             openai_client=self.openai,
@@ -141,53 +144,47 @@ In "end_talking" set true if the dialog should be completed.
         else:
             mistakes = None
 
-        if response_type == 'text':
-            result = AnswerTalkingResult(
-                answer=AIAnswer(text=resp_main_dialog.answer),
-                correct=correct,
-                indications=mistakes
+        if not voice_over:
+            answer = AIAnswer(text=resp_main_dialog.answer)
+        else:
+            audio = await self.speacker_ai.generate(text=resp_main_dialog.answer,
+                                                   voice='')
+            answer = AIAnswer(
+                text=resp_main_dialog.answer,
+                audio=audio
             )
-            return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang,
-                                   end_talking=resp_main_dialog.end_talking)
-        raise ValueError('Такого respose_type нет: {}'.format(response_type))
 
-    async def send_voice_talking(
-        self, audio_path: str, messages: list[ChatCompletionMessageParam] | None = None,
+        result = AnswerTalkingResult(
+            answer=answer,
+            correct=correct,
+            indications=mistakes
+        )
+        return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang,
+                               end_talking=resp_main_dialog.end_talking)
+
+    async def send_audio_talking(
+        self,
+        path_to_audio: str,
+        theme: str,
+        dialog_type: DialogType = DialogType.SMALL_TALK,
+        user_lang_level: Literal['A1', 'A2', 'A3'] = 'A1',
+        messages: list[ChatCompletionMessageParam] | None = None,
         response_type: Literal['text'] = 'text'
-    ) -> AnswerTalkingResult:
+    ) -> TalkingResponse:
         openai_service = OpenAIService(
             openai_client=self.openai,
-            system_message='''
-Ты - бот для изучения английского языка. Общайся с пользователем и указывай на его ошибки.
-Ошибки объясняй на русском, а общение веди на английском
-'''.strip(),
-            model=self.model
+            system_message='Расшифровывай аудио не исправляя никаких грамматических, орфографических или иных ошибок. '
+                           'Все должно быть написано в точности как произнесено',
+            model='whisper-1'
         )
-        response_text = await openai_service.send_audio_get_schema(
-            audio_path=audio_path,
-            schema=AnswerTalking,
-            messages=messages
+        user_text = await openai_service.transcript_audio(
+            audio_path=path_to_audio
         )
-        if response_type == 'text':
-            return AnswerTalkingResult(
-                answer=AIAnswer(text=response_text.answer),
-                indications=response_text.indications
-            )
-        raise ValueError('Такого respose_type нет: {}'.format(response_type))
-
-#     async def rate_dialog(
-#             self, messages: list[ChatCompletionMessageParam], indications: list[str]
-#     ):
-#         openai = OpenAIService(
-#             openai_client=self.openai,
-#             system_message='''
-# Ты - бот для изучения английского языка
-# '''.strip()
-#         )
-#         resp = await openai.send_text_get_schema(
-#             prompt='Оцени весь диалог на знания английского и выдели основные ошибки пользователя',
-#             schema=
-#         )
+        return await self.send_text_talking(
+            user_text=user_text, user_lang_level=user_lang_level,
+            messages=messages, theme=theme,
+            dialog_type=dialog_type, response_type=response_type
+        )
 
 
 class LangLearngingAIServiceTEST:
@@ -302,3 +299,24 @@ class LangLearngingAIServiceTEST:
         except Exception as e:
             print(f"Error parsing response: {e}")
             return TalkingResponse(is_right_lang=False)
+
+    async def send_audio_talking(
+        self,
+        path_to_audio: str,
+        user_lang_level: Literal['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] = 'A1',
+        messages: list[dict] | None = None,
+        **kwargs
+    ) -> TalkingResponse:
+        openai_service = OpenAIService(
+            openai_client=self.openai,
+            system_message='Расшифровывай аудио не исправляя никаких грамматических, орфографических или иных ошибок. '
+                           'Все должно быть написано в точности как произнесено',
+            model='whisper-1'
+        )
+        user_text = await openai_service.transcript_audio(
+            audio_path=path_to_audio
+        )
+        return await self.send_text_talking(
+            user_text=user_text, user_lang_level=user_lang_level,
+            messages=messages, **kwargs
+        )

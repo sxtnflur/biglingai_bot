@@ -22,4 +22,4 @@ class Payment(Base):
     created_at: Mapped[CreatedAt]
     paid_at: Mapped[datetime | None]
     test: Mapped[bool]
-
+    is_auto_paid: Mapped[bool] = mapped_column(server_default='False')

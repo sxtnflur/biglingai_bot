@@ -2,18 +2,17 @@ from datetime import timedelta, datetime
 
 from database import models
 from schedulers import SchedulerServiceProtocol
-from schedulers.autopayment import get_job_id
 from schemas.subs import CreditsPack, Sub
 from services.users_service import UsersService
-from sqlalchemy import update, case, and_, func
+from sqlalchemy import update, case, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing_extensions import Protocol
 
 
 class SubsServiceProtocol(Protocol):
-    def get_subs(self) -> list[Sub]: ...
+    async def get_subs(self, db: AsyncSession) -> list[Sub]: ...
 
-    def get_sub(self, id: int) -> Sub: ...
+    async def get_sub(self, id: int, db: AsyncSession) -> Sub: ...
 
     async def create_or_increase_sub_by_days(
             self, days: int, user_id: int, db: AsyncSession
@@ -29,8 +28,6 @@ class SubsServiceProtocol(Protocol):
 
 
 class SubsService(SubsServiceProtocol):
-    def __init__(self, scheduler_service: SchedulerServiceProtocol):
-        self.scheduler_service = scheduler_service
 
     def get_credits_packs(self):
         return [
@@ -48,21 +45,30 @@ class SubsService(SubsServiceProtocol):
     def get_credits_pack_by_id(self, id: int):
         return self.get_credits_packs()[id-1]
 
-    def get_subs(self):
-        return [
-            Sub(
-                id=1, name='Турист', days=1, price=49
-            ),
-            Sub(
-                id=2, name='Лингвист', days=30, price=190
-            ),
-            Sub(
-                id=4, name='Носитель', days=90, price=490
-            )
-        ]
+    async def get_subs(self, db: AsyncSession) -> list[Sub]:
+        subs = await db.scalars(
+            select(models.Sub)
+            .order_by(models.Sub.price.asc())
+        )
+        return list(map(Sub.model_validate, subs))
 
-    def get_sub(self, id: int):
-        return self.get_subs()[id-1]
+    async def get_sub(self, id: int, db: AsyncSession) -> Sub | None:
+        return await db.scalar(
+            select(models.Sub)
+            .filter(models.Sub.id == id)
+        )
+
+    # def get_subs_by_filters(self, **filters) -> list[Sub]:
+    #     def f(x: Sub):
+    #         for k, v in filters.items():
+    #             return getattr(x, k, None) == v
+    #
+    #     return filter(f, self.get_subs())
+
+    def get_sub_by_filters(self, **filters) -> Sub | None:
+        res = self.get_subs_by_filters(**filters)
+        if res:
+            return res[0]
 
     async def create_or_increase_sub_by_days(
         self, days: int, user_id: int, db: AsyncSession
@@ -80,13 +86,13 @@ class SubsService(SubsServiceProtocol):
             .returning(models.User.sub_end)
         )
 
-    async def create_or_increase_sub(
-        self, sub_id: int, user_id: int, db: AsyncSession
-    ) -> datetime:
-        sub = self.get_sub(sub_id)
-        return await self.create_or_increase_sub_by_days(
-            days=sub.days, user_id=user_id, db=db
-        )
+    # async def create_or_increase_sub(
+    #     self, sub_id: int, user_id: int, db: AsyncSession
+    # ) -> datetime:
+    #     sub = self.get_sub(sub_id)
+    #     return await self.create_or_increase_sub_by_days(
+    #         days=sub.days, user_id=user_id, db=db
+    #     )
 
     async def cancel_autopayment(
         self, user_id: int, db: AsyncSession
@@ -96,23 +102,17 @@ class SubsService(SubsServiceProtocol):
             .filter(models.User.id == user_id)
             .values(is_autopayment=False)
         )
-        self.scheduler_service.autopayment_scheduler.remove_user_job(user_id)
 
-    async def add_autopayment_to_user(self, user_id: int, payment_method_id: str,
-                                      autopayment_duration: timedelta,
-                                      sub_end: datetime,
+
+    async def add_autopayment_to_user(self,
+                                      user_id: int,
+                                      payment_method_id: str,
+                                      sub_id: int,
                                       db: AsyncSession
                                       ) -> None:
         await UsersService(db).update_user(
             user_tid=user_id,
+            current_sub_id=sub_id,
             payment_method_id=payment_method_id,
-            is_autopayment=True,
-            autopayment_duration=autopayment_duration
+            is_autopayment=True
         )
-        self.scheduler_service.autopayment_scheduler.add_job_to_user(user_id, sub_end=sub_end)
-
-    # async def return_autopayment_to_user(self, user_id: int, db: AsyncSession):
-    #     await UsersService(db).update_user(
-    #         user_tid=user_id,
-    #         is_autopayment=True
-    #     )

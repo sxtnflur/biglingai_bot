@@ -52,7 +52,7 @@ class Elevenlabs(BaseAiSpeacker):
 
     async def speech_to_text(self, audio: bytes) -> str:
         res = await self.client.speech_to_text.convert(
-            model_id=self.model,
+            model_id='scribe_v1',
             file=audio
         )
         return res.text

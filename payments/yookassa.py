@@ -38,10 +38,6 @@ class YooKassaService(YooKassaServiceABC):
                 "currency": "RUB"
             },
             "capture": True,
-            "confirmation": {
-                "type": "redirect",
-                "return_url": "https://t.me/ideal_ai_bot"
-            },
             "description": description,
             "receipt": {
                 "customer": {

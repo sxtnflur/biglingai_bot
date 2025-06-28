@@ -116,10 +116,6 @@ async def chatting_mode_start(
     type_: Literal['text', 'audio', 'text-and-audio'] = 'text-and-audio'
     await send_ai_message(answer, call.message, type_=type_)
 
-    await call.message.answer(
-        ChattingTexts.ai_answer(answer),
-        reply_markup=ChattingKeyboards.ai_answer()
-    )
     await state.set_state(ChattingStates.chatting)
     await state.update_data(dialog_uuid=uuid.uuid4(), dialog_type=callback_data.type, theme=theme)
 
@@ -155,7 +151,7 @@ async def chatting(
             dialog_type=dialog_type,
             theme=theme,
             messages=messages,
-            response_type='text'
+            voice_over=True
         )
         os.remove(path_to_audio)
     else:
@@ -164,7 +160,7 @@ async def chatting(
             dialog_type=dialog_type,
             theme=theme,
             messages=messages,
-            response_type='text'
+            voice_over=True
         )
     type_: Literal['text', 'audio', 'text-and-audio'] = 'text-and-audio'
     await send_ai_message(answer=answer, message=message, type_=type_)

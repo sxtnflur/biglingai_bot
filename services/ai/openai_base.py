@@ -1,7 +1,8 @@
-from openai import AsyncOpenAI, NotGiven
+from openai import AsyncOpenAI, NotGiven, NOT_GIVEN
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
 from typing import TypeVar
+import os
 
 
 TSchema = TypeVar('TSchema', bound=BaseModel)
@@ -54,11 +55,19 @@ class OpenAIService:
         return res.choices[0].message.content
 
     async def transcript_audio(
-        self, audio_path: str, model: str | None = 'whisper', prompt: str | NotGiven = NotGiven, **kwargs
+        self, audio_path: str, model: str | None = None, prompt: str | NotGiven = NOT_GIVEN, **kwargs
     ) -> str:
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Audio file not found at {audio_path}")
+
+        # Проверка размера файла
+        file_size = os.path.getsize(audio_path)
+        if file_size > 25 * 1024 * 1024:  # 25 MB
+            raise ValueError("File size exceeds 25 MB limit")
+
         with open(audio_path, 'rb') as audio_file:
             resp = await self._client.audio.transcriptions.create(
-                file=audio_file,
+                file=audio_file.read(),
                 model=model or self.default_model,
                 prompt=prompt
             )

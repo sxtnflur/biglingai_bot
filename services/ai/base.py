@@ -168,21 +168,18 @@ In "end_talking" set true if the dialog should be completed.
         dialog_type: DialogType = DialogType.SMALL_TALK,
         user_lang_level: Literal['A1', 'A2', 'A3'] = 'A1',
         messages: list[ChatCompletionMessageParam] | None = None,
-        response_type: Literal['text'] = 'text'
+        voice_over: bool = True
     ) -> TalkingResponse:
-        openai_service = OpenAIService(
-            openai_client=self.openai,
-            system_message='Расшифровывай аудио не исправляя никаких грамматических, орфографических или иных ошибок. '
-                           'Все должно быть написано в точности как произнесено',
+        user_text = await OpenAIService(openai_client=self.openai).transcript_audio(
+            audio_path=path_to_audio,
+            prompt='Расшифровывай аудио не исправляя никаких грамматических, орфографических или иных ошибок. '
+                   'Все должно быть написано в точности как произнесено',
             model='whisper-1'
-        )
-        user_text = await openai_service.transcript_audio(
-            audio_path=path_to_audio
         )
         return await self.send_text_talking(
             user_text=user_text, user_lang_level=user_lang_level,
             messages=messages, theme=theme,
-            dialog_type=dialog_type, response_type=response_type
+            dialog_type=dialog_type, voice_over=voice_over
         )
 
 

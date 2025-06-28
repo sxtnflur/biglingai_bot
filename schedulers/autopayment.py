@@ -7,7 +7,7 @@ from payments import PaymentData
 from services.payments_service import PaymentsServiceProtocol
 from sqlalchemy.dialects.postgresql import INTERVAL
 from .abc import AutopaymentSchedulerProtocol
-from sqlalchemy import select, update, func, Interval
+from sqlalchemy import select, update, func, Interval, String
 from sqlalchemy.orm import load_only
 from apscheduler.triggers.cron import CronTrigger
 
@@ -40,8 +40,7 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                     .values(
                         sub_end=(
                                 func.coalesce(models.User.sub_end, func.now()) +
-                                func.cast(f"{models.Sub.days} days", INTERVAL
-                            )
+                                func.cast(func.cast(models.Sub.days, String) + ' day', INTERVAL)
                         )
                     )
                     .returning(models.User.payment_method_id, models.Sub.price,

@@ -147,8 +147,7 @@ In "end_talking" set true if the dialog should be completed.
         if not voice_over:
             answer = AIAnswer(text=resp_main_dialog.answer)
         else:
-            audio = await self.speacker_ai.generate(text=resp_main_dialog.answer,
-                                                   voice='')
+            audio = await self.speacker_ai.generate(text=resp_main_dialog.answer)
             answer = AIAnswer(
                 text=resp_main_dialog.answer,
                 audio=audio

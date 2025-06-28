@@ -170,12 +170,9 @@ In "end_talking" set true if the dialog should be completed.
         messages: list[ChatCompletionMessageParam] | None = None,
         voice_over: bool = True
     ) -> TalkingResponse:
-        user_text = await OpenAIService(openai_client=self.openai).transcript_audio(
-            audio_path=path_to_audio,
-            prompt='Расшифровывай аудио не исправляя никаких грамматических, орфографических или иных ошибок. '
-                   'Все должно быть написано в точности как произнесено',
-            model='whisper-1'
-        )
+        with open(path_to_audio, 'rb') as audio_file:
+            user_text = await self.speacker_ai.speech_to_text(audio=audio_file.read())
+
         return await self.send_text_talking(
             user_text=user_text, user_lang_level=user_lang_level,
             messages=messages, theme=theme,

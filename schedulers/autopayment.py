@@ -59,12 +59,11 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                         f'так как у пользователя нет payment_method_id/is_autopayment/autopayment_duration'
                     )
                 else:
-                    payment_response: PaymentData = await self.payment_factory.create_payment(
+                    payment_response: PaymentData = await self.payment_factory.create_auto_payment(
                         amount=price,
                         payment_method='yookassa',
                         payment_method_id=payment_method_id,
-                        description='Автооплата',
-                        save_payment_method_id=False
+                        description='Автооплата'
                     )
                     await self.payments_service.save_autopayment(
                         db=session, user_tid=user_id,

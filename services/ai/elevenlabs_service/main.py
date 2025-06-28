@@ -50,6 +50,13 @@ class Elevenlabs(BaseAiSpeacker):
         )
         return await self.__parse_file_iterator(audio)
 
+    async def speech_to_text(self, audio: bytes) -> str:
+        res = await self.client.speech_to_text.convert(
+            model_id=self.model,
+            file=audio
+        )
+        return res.text
+
     async def speech_to_speech(self, audio: bytes, voice: str = settings.ELEVENLABS_DEFAULT_VOICE_ID) -> bytes:
         result_audio = await self.client.speech_to_speech.convert(
             voice_id=voice,

@@ -62,12 +62,15 @@ class OpenAIService:
 
         # Проверка размера файла
         file_size = os.path.getsize(audio_path)
+        print(f'{file_size=}')
         if file_size > 25 * 1024 * 1024:  # 25 MB
             raise ValueError("File size exceeds 25 MB limit")
 
         with open(audio_path, 'rb') as audio_file:
+            file_size = len(audio_file.read())
+            print(f'{file_size=}')
             resp = await self._client.audio.transcriptions.create(
-                file=audio_file.read(),
+                file=audio_file,
                 model=model or self.default_model,
                 prompt=prompt
             )

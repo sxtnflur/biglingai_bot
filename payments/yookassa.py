@@ -74,5 +74,47 @@ class YooKassaService(YooKassaServiceABC):
             id=payment_id, url=payment_url
         )
 
+    async def create_auto_payment(
+            self,
+            amount: int,
+            description: str,
+            payment_method_id: str,
+            test: bool = False
+    ) -> str:
+        data = {
+            "amount": {
+                "value": amount,
+                "currency": "RUB"
+            },
+            "capture": True,
+            "description": description,
+            "receipt": {
+                "customer": {
+                    "full_name": "Иванов Иван Иванович",
+                    "phone": "79000000000"
+                },
+                "items": [
+                    {
+                        "description": description,
+                        "quantity": "1.00",
+                        "amount": {
+                            "value": amount,
+                            "currency": "RUB"
+                        },
+                        "vat_code": "2",
+                        "payment_mode": "full_prepayment",
+                        "payment_subject": "commodity"
+                    }
+                ]
+            },
+            "payment_method_id": payment_method_id,
+            "test": test
+        }
+
+        payment = await Payment.create(data)
+
+        payment_data = json.loads(payment.json())
+        return payment_data['id']
+
     async def cancel_payment(self, payment_id: str):
         return await Payment.cancel(payment_id)

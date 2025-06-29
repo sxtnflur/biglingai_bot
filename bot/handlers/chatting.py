@@ -5,7 +5,8 @@ from aiogram import Router, F
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, Message, ReactionTypeUnion, ReactionTypeEmoji, BufferedInputFile
+from aiogram.types import CallbackQuery, Message, ReactionTypeUnion, ReactionTypeEmoji, BufferedInputFile, \
+    ReplyKeyboardRemove
 from bot.callbacks.chatting import SelectChattingTypeCallback, ChangeChattingMessageTypeCallback
 from bot.keyboards.credits import CreditsKeyboards
 from bot.keyboards.mistakes import MistakesKeyboards
@@ -115,8 +116,7 @@ async def start_chatting(
     call: CallbackQuery, state: FSMContext
 ):
     await state.set_state(None)
-    await call.message.edit_text(
-        ChattingTexts.START,
+    await call.message.edit_reply_markup(
         reply_markup=ChattingKeyboards.start(
             current_message_type=ChattingMessageType.text_and_voice
         )
@@ -229,6 +229,10 @@ async def chatting(
     )
 
     if message.text == ChattingTexts.END_BUTTON:
+        await message.answer(
+            text='Диалог закончен предварительно',
+            reply_markup=ReplyKeyboardRemove()
+        )
         await end_dialog(
             state=state,
             message=message,

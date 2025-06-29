@@ -58,12 +58,6 @@ async def start_call(
 ):
     await state.clear()
     user = await UsersService(db).get_user(call.from_user.id)
-    try:
-        await call.message.edit_text(
-            BaseTexts.start(call.from_user.first_name, user.credits, user.td_before_sub_end),
-            reply_markup=BaseKeyboards.main_menu()
-        )
-    except:
-        await call.message.delete_reply_markup()
-        await call.message.answer(BaseTexts.start(call.from_user.first_name, user.credits, user.td_before_sub_end),
-                                  reply_markup=BaseKeyboards.main_menu())
+    await call.message.delete_reply_markup()
+    await call.message.answer(BaseTexts.start(call.from_user.first_name, user.credits, user.td_before_sub_end),
+                              reply_markup=BaseKeyboards.main_menu())

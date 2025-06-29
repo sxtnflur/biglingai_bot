@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from aiogram import Bot
 from bot.keyboards.base import BaseKeyboards
-from bot.texts.base import BaseTexts
+from bot.texts.base import BaseTexts, td_to_text
 from config import settings
 from depends import logger_service, payment_factory, payments_service, scheduler, subs_service
 from fastapi import APIRouter, Request, Depends
@@ -63,18 +63,26 @@ async def process_pay(
             f'<i>{payment_method_title}</i>' if payment_method_title else ''
         )
 
-    await bot.send_message(
-        chat_id=payment.user.id,
-        text='✅ Оплата прошла успешно!\nВаша подписка окончится: {}'
-        .format(payment.sub_end.strftime('%H:%M %d.%m.%Y')),
-        parse_mode='HTML'
-    )
-    await bot.send_message(
-        chat_id=payment.user.id,
-        text=BaseTexts.start(payment.user.first_name, payment.user.credits, payment.user.td_before_sub_end),
-        reply_markup=BaseKeyboards.main_menu(),
-        parse_mode='HTML'
-    )
+    if payment.payment.is_auto_paid:
+        await bot.send_message(
+            chat_id=payment.user.id,
+            text='✅ Автооплата прошла успешно!\nВаша подписка продлена и окончится через <code>{}</code>'
+            .format(td_to_text(payment.user.td_before_sub_end.days)),
+            reply_markup=BaseKeyboards.to_main_menu()
+        )
+    else:
+        await bot.send_message(
+            chat_id=payment.user.id,
+            text='✅ Оплата прошла успешно!\nВаша подписка окончится через <code>{}</code>'
+            .format(td_to_text(payment.user.td_before_sub_end.days)),
+            parse_mode='HTML'
+        )
+        await bot.send_message(
+            chat_id=payment.user.id,
+            text=BaseTexts.start(payment.user.first_name, payment.user.credits, payment.user.td_before_sub_end),
+            reply_markup=BaseKeyboards.main_menu(),
+            parse_mode='HTML'
+        )
     await db.commit()
     await logger_service.log_by_telegram_bot(
         f'Пользователь: {payment.user.full_name} @{payment.user.username} {payment.user.id}\n'

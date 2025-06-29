@@ -77,3 +77,9 @@ class BaseKeyboards:
     @staticmethod
     def create_kb_back(callback_data: str):
         return InlineKeyboardMarkup(inline_keyboard=[[BaseKeyboards.create_btn_back(callback_data)]])
+
+    @staticmethod
+    def to_main_menu():
+        return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
+            text=BaseTexts.MAIN_MENU_BUTTON, callback_data='start'
+        )]])

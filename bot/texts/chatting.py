@@ -5,12 +5,21 @@ from services.mistakes_service import MistakeSchema
 
 
 class ChattingTexts:
-    INSTRUCTION = '''
-Как только ты нажмешь на один из режимов, я начну с тобой общаться на английском.
-Ты должен поддерживать наш диалог. После каждого сообщения я буду указывать на твои ошибки,
-а в конце дам тебе оценку.
+    START = '''
+💬 <b>Чаттинг</b>
 
-Выбери режим общения:
+<blockquote expandable>Здесь ты можешь пообщаться со мной на заготовленные темы
+Ты должен поддерживать наш диалог. После каждого сообщения я буду указывать на твои ошибки,
+а в конце дам тебе оценку</blockquote>
+
+<i>Выбери формат, в котором я буду с тобой общаться (🖊️ Текст / 🗣️ Голос / 🗣️ Голос + 🖊️ Текст),
+а после нажми "⏩ Выбрать режим"</i>
+'''
+
+    INSTRUCTION = '''
+Как только ты нажмешь на один из режимов, мы начнем общение
+
+<i>Скорее выбирай режим:</i>
 '''
 
     RESULT_DIALOG_WITH_MISTAKES = '''
@@ -40,7 +49,7 @@ class ChattingTexts:
 
     @staticmethod
     def dialog_message_type_button(current_value: ChattingMessageType):
-        return 'Ответ в формате: ' + current_value.label
+        return 'Формат ответа: ' + current_value.label
 
     @staticmethod
     def ai_answer_mistakes(correction: AnswerTalkingIndications):

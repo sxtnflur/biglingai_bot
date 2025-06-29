@@ -27,6 +27,7 @@ class Payment(BaseModel):
     amount: int
     created_at: datetime
     paid_at: datetime | None = None
+    is_auto_paid: bool = False
 
     class Config: from_attributes = True
 

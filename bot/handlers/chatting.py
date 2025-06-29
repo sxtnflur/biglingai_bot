@@ -116,7 +116,7 @@ async def start_chatting(
 ):
     await state.set_state(None)
     await call.message.edit_text(
-        ChattingTexts.INSTRUCTION,
+        ChattingTexts.START,
         reply_markup=ChattingKeyboards.start(
             current_message_type=ChattingMessageType.text_and_voice
         )

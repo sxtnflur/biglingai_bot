@@ -1,3 +1,4 @@
+from services.translator import TranslationResult
 
 
 class TranslationTexts:
@@ -10,11 +11,12 @@ class TranslationTexts:
 '''
 
     @staticmethod
-    def show_translation(orig_word: str, translated_word: str):
+    def show_translation(translation_result: TranslationResult):
         return '''    
-<b>Ваш текст:</b>
+<b>Ваш текст ({}):</b>
 <blockquote>{}</blockquote>
 ---------------------------
-<b>Перевод:</b>
+<b>Перевод ({}):</b>
 <blockquote>{}</blockquote>
-'''.format(orig_word, translated_word)
+'''.format(translation_result.orig_language.upper(), translation_result.orig,
+           translation_result.translated_language.upper(), translation_result.translated)

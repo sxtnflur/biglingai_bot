@@ -44,13 +44,13 @@ async def subs(
     call: CallbackQuery, db: AsyncSession
 ):
     subs = await subs_service.get_subs(db=db)
-    user = await UsersService(db).get_user(call.from_user.id)
+    user = await UsersService(db).get_user_with_sub(call.from_user.id)
     await call.message.edit_text(
         SubsTexts.subs(
             subs,
             has_autopayment=user.is_autopayment,
             td_before_sub_end=user.td_before_sub_end,
-            current_sub=user.cu
+            current_sub=user.current_sub
         ),
         reply_markup=SubsKeyboards.subs(subs, has_autopayment=user.is_autopayment)
     )

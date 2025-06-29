@@ -7,8 +7,9 @@ from sqlalchemy import text, select, update, exists, func, case, or_
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.types import User as TgUser
+from sqlalchemy.orm import selectinload
 from typing_extensions import Literal
-from schemas.users import User as UserSchema
+from schemas.users import User as UserSchema, UserWithSubSchema
 
 
 class UsersService:
@@ -69,9 +70,18 @@ RETURNING credits, sub_end
 
     async def get_user(self, user_tid: int) -> UserSchema:
         user = await self.__db.scalar(
-            select(User).filter(User.id == user_tid)
+            select(User)
+            .filter(User.id == user_tid)
         )
         return UserSchema.model_validate(user)
+
+    async def get_user_with_sub(self, user_tid: int) -> UserWithSubSchema:
+        user = await self.__db.scalar(
+            select(User)
+            .options(selectinload(User.current_sub))
+            .filter(User.id == user_tid)
+        )
+        return UserWithSubSchema.model_validate(user)
 
     async def update_user_credits(self, user_tid: int, credits: int, action: Literal['up', 'down']) -> int:
         if action == 'down' and (not await self.get_user_credits(user_tid)):

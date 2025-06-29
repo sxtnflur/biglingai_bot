@@ -3,11 +3,10 @@ from services.translator import TranslationResult
 
 class TranslationTexts:
     MAIN = '''
-Это переводчик с русского на английский и с английского на русский
+❗ <b>Заходить в этот раздел необязательно</b> ❗
+ℹ <i>Ты можешь отправить текст в любом разделе бота и я его переведу</i>
 
-ℹ <i>Вы можете отправить текст в любом разделе бота и нажать "Перевести"</i>
-
-Введи текст и получи перевод:
+<i>Попробуй прямо сейчас, введи любой текст на русском или английском:</i>
 '''
 
     @staticmethod
@@ -19,7 +18,7 @@ class TranslationTexts:
 <b>Перевод ({}):</b>
 <blockquote>{}</blockquote>
 '''.format(translation_result.orig_language.upper(), translation_result.orig,
-           translation_result.translated_language.upper(), translation_result.translated)
+           translation_result.translated_language.upper(), translation_result.translated).strip()
         if len(translation_result.en_text.split()) == 1:
             text += '\n\n<i>Добавить слово "{}" в словарь?</i>'.format(translation_result.en_text)
         return text

@@ -1,6 +1,6 @@
 from schemas.grammar import GrammarResult, GrammarEdit
 import errant
-from gradio_client import Client
+from gradio_client import Client, handle_file
 
 
 class GrammarAIService:
@@ -55,18 +55,18 @@ class GrammarAIService:
             edits=await self.get_edits(orig=text, corr=corr)
         )
 
-    async def correct_audio(self, audio: bytes) -> str:
+    async def correct_audio(self, audio_path: str) -> str:
         result = self.gr_client.submit(
             text=None,
-            audio=audio,
+            audio=handle_file(audio_path),
             api_name="//predict"
         )
         correct: str = result.result()[0]
         print(f'{correct=}')
         return correct
 
-    async def process_audio(self, audio: bytes) -> GrammarResult:
-        corr = await self.correct_audio(audio)
+    async def process_audio(self, audio_path: str) -> GrammarResult:
+        corr = await self.correct_audio(audio_path)
         return GrammarResult(
             correct=corr,
             original=None,

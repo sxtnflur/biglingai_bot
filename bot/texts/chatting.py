@@ -53,8 +53,10 @@ class ChattingTexts:
     def ai_answer(answer: TalkingResponse) -> str:
         if not answer.is_right_lang:
             return 'Пожалуйста, перейдите на английский язык'
-
-        return ChattingTexts.ai_answer_mistakes(answer.result) + answer.result.answer.text
+        if answer.result.indications:
+            return ChattingTexts.ai_answer_mistakes(answer.result) + answer.result.answer.text
+        else:
+            return answer.result.answer.text
 
     @staticmethod
     def result_dialog(count_messages: int, mistakes: list[MistakeSchema] | None = None) -> str:

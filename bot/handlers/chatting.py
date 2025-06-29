@@ -105,7 +105,7 @@ async def chatting_mode_start(
     theme = dialog_type.random_theme
 
     answer = await langlearning_openai_service.send_text_talking(
-        'Hello!', theme=theme, dialog_type=dialog_type, voice_over=True
+        'Hello!', theme=theme, dialog_type=dialog_type, voice_over=False
     )
     try:
         await call.message.edit_text(
@@ -152,7 +152,7 @@ async def chatting(
             dialog_type=dialog_type,
             theme=theme,
             messages=messages,
-            voice_over=True
+            voice_over=False
         )
         os.remove(path_to_audio)
     else:
@@ -161,7 +161,7 @@ async def chatting(
             dialog_type=dialog_type,
             theme=theme,
             messages=messages,
-            voice_over=True
+            voice_over=False
         )
     type_: Literal['text', 'audio', 'text-and-audio'] = 'text-and-audio'
     await send_ai_message(answer=answer, message=message, type_=type_)

@@ -96,11 +96,11 @@ In "end_talking" set true if the dialog should be completed.
             schema=TaskWithVariants
         )
 
-    async def find_mistakes(self, user_input: str | bytes, messages: list[...]) -> tuple[list[Mistake], str]:
-        if isinstance(user_input, str):
-            grammar_resp = await self.grammar_ai.process_text(user_input)
-        else:
-            grammar_resp = await self.grammar_ai.process_audio(user_input)
+    async def find_mistakes(
+            self, user_text: str,
+            messages: list[...]
+    ) -> tuple[list[Mistake], str]:
+        grammar_resp = await self.grammar_ai.process_text(user_text)
 
         print(f'{grammar_resp=}')
         correct = grammar_resp.correct
@@ -110,6 +110,7 @@ In "end_talking" set true if the dialog should be completed.
             messages=messages,
             temperature=0.3
         )
+        print(f'{resp_indications=}')
         return resp_indications.mistakes, correct
 
     async def send_text_talking(
@@ -137,7 +138,7 @@ In "end_talking" set true if the dialog should be completed.
 
         correct = user_text
         if messages:
-            mistakes, correct = await self.find_mistakes(user_text, messages)
+            mistakes, correct = await self.find_mistakes(user_text=user_text, messages=messages)
         else:
             mistakes = None
 
@@ -170,44 +171,9 @@ In "end_talking" set true if the dialog should be completed.
         with open(path_to_audio, 'rb') as audio_file:
             user_text = await self.speacker_ai.speech_to_text(audio=audio_file.read())
             print(f'{user_text=}')
-
-        resp_main_dialog = await self.openai_dialog.send_text_get_schema(
-            prompt=user_text,
-            messages=[{'role': 'system',
-                       'content': f"User's English proficiency level is {user_lang_level}. "
-                                  f"Please keep this in mind when communicating with him. "
-                                  f"Talk with him in English. Just please don't fix his mistakes. "
-                                  f"Theme of this dialogue is {theme} and type of the dialog is {dialog_type.label}"
-                       }] + (messages or []),
-            schema=AnswerTalking,
-            temperature=0.7
+        return await self.send_text_talking(
+            user_text, theme, dialog_type, user_lang_level, messages, voice_over
         )
-        if not resp_main_dialog.is_right_lang:
-            return TalkingResponse(is_right_lang=False)
-
-        correct = user_text
-        if messages:
-            with open(path_to_audio, 'rb') as audio_file:
-                mistakes, correct = await self.find_mistakes(audio_file.read(), messages)
-        else:
-            mistakes = None
-
-        if not voice_over:
-            answer = AIAnswer(text=resp_main_dialog.answer)
-        else:
-            audio = await self.speacker_ai.generate(text=resp_main_dialog.answer)
-            answer = AIAnswer(
-                text=resp_main_dialog.answer,
-                audio=audio
-            )
-
-        result = AnswerTalkingResult(
-            answer=answer,
-            correct=correct,
-            indications=mistakes
-        )
-        return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang,
-                               end_talking=resp_main_dialog.end_talking)
 
 
 class LangLearngingAIServiceTEST:

@@ -1,5 +1,5 @@
 from services.ai.base import TalkingResponse
-from schemas.chatting import Mistake, MistakeSubGroup, DialogType
+from schemas.chatting import Mistake, MistakeSubGroup, DialogType, AnswerTalkingResult
 from services.mistakes_service import MistakeSchema
 
 
@@ -34,10 +34,7 @@ class ChattingTexts:
     END_BUTTON = 'Закончить предварительно'
 
     @staticmethod
-    def ai_answer(answer: TalkingResponse) -> str:
-        if not answer.is_right_lang:
-            return 'Пожалуйста, перейдите на английский язык'
-
+    def ai_answer_mistakes(result: AnswerTalkingResult):
         def prepare_mistake(mistake: Mistake):
             print(f'{mistake=}')
             return (
@@ -45,17 +42,19 @@ class ChattingTexts:
                     f"ℹ {mistake.explanation}\n"
                     f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
             )
-            # return str(mistake.model_dump())
-            # return f'<b>{MistakeSubGroup(mistake.subgroup).subgroup_label.title()} ({MistakeSubGroup(mistake.subgroup).group.label.title()}):</b> {mistake.explanation}'
-
-        text = ''
-        if answer.result.indications:
-            text += '<b>Исправленный текст:</b> {}\n\n'.format(answer.result.correct)
-            text += (
+        text = '<b>Исправленный текст:</b> {}\n\n'.format(result.correct)
+        text += (
                 '<b>Замечания:</b>\n{}\n\n'.format(
-                    '\n\n'.join(list(map(prepare_mistake, answer.result.indications)))
+                    '\n\n'.join(list(map(prepare_mistake, result.indications)))
                 ) + '\n<b>Продолжим общение:</b>\n')
-        return text + answer.result.answer.text
+        return text
+
+    @staticmethod
+    def ai_answer(answer: TalkingResponse) -> str:
+        if not answer.is_right_lang:
+            return 'Пожалуйста, перейдите на английский язык'
+
+        return ChattingTexts.ai_answer_mistakes(answer.result) + answer.result.answer.text
 
     @staticmethod
     def result_dialog(count_messages: int, mistakes: list[MistakeSchema] | None = None) -> str:

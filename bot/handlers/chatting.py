@@ -42,8 +42,8 @@ def get_reaction(count_mistakes: int) -> ReactionTypeUnion | None:
 
 async def send_ai_message(
         answer: TalkingResponse, message: Message,
-        type_: Literal['text', 'audio', 'text-and-audio'
-]) -> None:
+        type_: Literal['text', 'audio', 'text-and-audio']
+) -> None:
     if answer.result.answer.audio:
         if type_ == 'text-and-audio':
             await message.answer_voice(
@@ -54,6 +54,7 @@ async def send_ai_message(
         elif type_ == 'audio':
             await message.answer_voice(
                 voice=BufferedInputFile(answer.result.answer.audio, filename='voice.mp3'),
+                caption=ChattingTexts.ai_answer_mistakes(answer.result),
                 reply_markup=ChattingKeyboards.ai_answer()
             )
         else:

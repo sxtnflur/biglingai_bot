@@ -32,6 +32,11 @@ class GrammarAIService:
         else:
             return []
 
+    def _post_process_result(self, correct: str, orig: str) -> str:
+        if correct.endswith('.') and not orig.endswith('.'):
+            return correct[:-1]
+        return correct
+
     async def correct_text(self, text: str) -> str:
         result = self.gr_client.submit(
             text=text,
@@ -40,9 +45,7 @@ class GrammarAIService:
         )
         correct: str = result.result()[0]
         print(f'{correct=}')
-        if correct.endswith('.') and not text.endswith('.'):
-            return correct[:-1]
-        return correct
+        return self._post_process_result(correct, text)
 
     async def process_text(self, text: str) -> GrammarResult:
         corr = await self.correct_text(text)
@@ -50,4 +53,22 @@ class GrammarAIService:
             correct=corr,
             original=text,
             edits=await self.get_edits(orig=text, corr=corr)
+        )
+
+    async def correct_audio(self, audio: bytes) -> str:
+        result = self.gr_client.submit(
+            text=None,
+            audio=audio,
+            api_name="//predict"
+        )
+        correct: str = result.result()[0]
+        print(f'{correct=}')
+        return correct
+
+    async def process_audio(self, audio: bytes) -> GrammarResult:
+        corr = await self.correct_audio(audio)
+        return GrammarResult(
+            correct=corr,
+            original=None,
+            edits=await self.get_edits(orig='', corr=corr)
         )

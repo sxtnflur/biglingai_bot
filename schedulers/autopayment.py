@@ -36,7 +36,8 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                             models.User.payment_method_id.isnot(None),
                             models.User.is_autopayment.is_(True),
                             models.User.current_sub_id.isnot(None),
-                            models.Sub.id == models.User.current_sub_id)
+                            models.Sub.id == models.User.current_sub_id
+                    )
                     .values(
                         sub_end=(
                                 func.coalesce(models.User.sub_end, func.now()) +
@@ -46,10 +47,15 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                     .returning(models.User.payment_method_id, models.Sub.price,
                                models.User.current_sub_id)
                 )
+                print(f'{result=}')
                 if not result: return
                 result = result.fetchone()
+                print(f'{result=}')
                 if not result: return
                 payment_method_id, price, current_sub_id = result
+                print(f'{payment_method_id=}')
+                print(f'{price=}')
+                print(f'{current_sub_id=}')
 
                 if not payment_method_id:
                     self.scheduler.remove_job(get_job_id(user_id))

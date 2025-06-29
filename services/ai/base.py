@@ -10,7 +10,7 @@ from services.ai.openai_base import OpenAIService
 from pydantic import BaseModel
 from typing_extensions import Literal, TypedDict, Union
 from schemas.chatting import TalkingResponse, AnswerTalking, AnswerTalkingResult, AnswerTalkingIndications, AIAnswer, \
-    DialogType
+    DialogType, Mistake
 
 
 class Choice(BaseModel):
@@ -47,6 +47,36 @@ class LangLearningAIService:
         self.model = model
         self.grammar_ai = grammar_ai
         self.speacker_ai = speacker_ai
+        self.openai_mistakes = OpenAIService(
+            openai_client=self.openai,
+            system_message='''
+Ты - бот для изучения английского языка "BiglingAI". В разделе "mistakes" укажите и исправьте ошибки пользователя, если таковые имеются.
+
+Ты будешь получать от пользователя текст и найденные в нем ошибки.
+Опирайся только на указанные ошибки.
+Структура ответа в JSON:
+{
+    "group": "Название группы на русском языке, которое ты придумаешь на основе type",
+    "type": "Берется из сообщения юзера. Это тег GECToR",
+    "incorrect": "Берется из сообщения юзера",
+    "correct": "Берется из сообщения юзера",
+    "explanation": "Дай подробное разъяснение ошибки на основе полученные данных на русском языке",
+    "example": примеры на других предложениях
+}
+'''.strip(), model=self.model
+        )
+        self.openai_dialog = OpenAIService(
+            openai_client=self.openai,
+            model=self.model,
+            system_message='''
+You are BiglingAI. Don't answer that you are ChatGPT or OpenAI.
+Communicate with the user on any topic in English within the user level.
+Don't correct the user's mistakes if they write something incorrectly.
+In "is_right_lang" return false if the user is not speaking to you in English.
+In "is_right_lang" write your answer. If is_right_lang=True, then the answer must be.
+In "end_talking" set true if the dialog should be completed.
+'''.strip()
+        )
 
     async def choose_one_variant(
         self, prompt: str
@@ -66,13 +96,21 @@ class LangLearningAIService:
             schema=TaskWithVariants
         )
 
-    # async def send_voice_read_text(
-    #     self, audio_path: str, text: str
-    # ) -> ReadingRating:
-    #     return await self.openai.send_text_get_schema(
-    #         prompt=,
-    #         schema=ReadingRating
-    #     )
+    async def find_mistakes(self, user_input: str | bytes, messages: list[...]) -> tuple[list[Mistake], str]:
+        if isinstance(user_input, str):
+            grammar_resp = await self.grammar_ai.process_text(user_input)
+        else:
+            grammar_resp = await self.grammar_ai.process_audio(user_input)
+
+        print(f'{grammar_resp=}')
+        correct = grammar_resp.correct
+        resp_indications = await self.openai_mistakes.send_text_get_schema(
+            schema=AnswerTalkingIndications,
+            prompt=grammar_resp.model_dump_json(),
+            messages=messages,
+            temperature=0.3
+        )
+        return resp_indications.mistakes, correct
 
     async def send_text_talking(
         self,
@@ -83,38 +121,7 @@ class LangLearningAIService:
         messages: list[ChatCompletionMessageParam] | None = None,
         voice_over: bool = True
     ) -> TalkingResponse:
-        openai_indications = OpenAIService(
-            openai_client=self.openai,
-            system_message='''
-Ты - бот для изучения английского языка "BiglingAI". В разделе "mistakes" укажите и исправьте ошибки пользователя, если таковые имеются.
-
-Ты будешь получать от пользователя текст и найденные в нем ошибки.
-Опирайся только на указанные ошибки.
-Структура ответа в JSON:
-{
-    "group": "Название группы на русском языке, которое ты придумаешь на основе type",
-    "type": "Берется из сообщения юзера. Это тег GECToR",
-    "incorrect": "Берется из сообщения юзера",
-    "correct": "Берется из сообщения юзера",
-    "explanation": "Дай подробное разъяснение ошибки на основе полученные данных на русском языке",
-    "example": примеры на других предложениях
-}
-'''.strip(), model=self.model
-        )
-        openai_main_dialog = OpenAIService(
-            openai_client=self.openai,
-            model=self.model,
-            system_message='''
-You are BiglingAI. Don't answer that you are ChatGPT or OpenAI.
-Communicate with the user on any topic in English within the user level.
-The user's level of language proficiency: {}
-Don't correct the user's mistakes if they write something incorrectly.
-In "is_right_lang" return false if the user is not speaking to you in English.
-In "is_right_lang" write your answer. If is_right_lang=True, then the answer must be.
-In "end_talking" set true if the dialog should be completed.
-'''.strip().format(user_lang_level)
-        )
-        resp_main_dialog = await openai_main_dialog.send_text_get_schema(
+        resp_main_dialog = await self.openai_dialog.send_text_get_schema(
             prompt=user_text,
             messages=[{'role': 'system',
                        'content': f"User's English proficiency level is {user_lang_level}. "
@@ -130,17 +137,7 @@ In "end_talking" set true if the dialog should be completed.
 
         correct = user_text
         if messages:
-            grammar_resp = await self.grammar_ai.process_text(user_text)
-            print(f'{grammar_resp=}')
-            correct = grammar_resp.correct
-            resp_indications = await openai_indications.send_text_get_schema(
-                schema=AnswerTalkingIndications,
-                prompt=grammar_resp.model_dump_json(),
-                messages=messages,
-                temperature=0.3
-            )
-            mistakes = resp_indications.mistakes
-            print(f'{resp_indications=}')
+            mistakes, correct = await self.find_mistakes(user_text, messages)
         else:
             mistakes = None
 
@@ -172,12 +169,45 @@ In "end_talking" set true if the dialog should be completed.
     ) -> TalkingResponse:
         with open(path_to_audio, 'rb') as audio_file:
             user_text = await self.speacker_ai.speech_to_text(audio=audio_file.read())
+            print(f'{user_text=}')
 
-        return await self.send_text_talking(
-            user_text=user_text, user_lang_level=user_lang_level,
-            messages=messages, theme=theme,
-            dialog_type=dialog_type, voice_over=voice_over
+        resp_main_dialog = await self.openai_dialog.send_text_get_schema(
+            prompt=user_text,
+            messages=[{'role': 'system',
+                       'content': f"User's English proficiency level is {user_lang_level}. "
+                                  f"Please keep this in mind when communicating with him. "
+                                  f"Talk with him in English. Just please don't fix his mistakes. "
+                                  f"Theme of this dialogue is {theme} and type of the dialog is {dialog_type.label}"
+                       }] + (messages or []),
+            schema=AnswerTalking,
+            temperature=0.7
         )
+        if not resp_main_dialog.is_right_lang:
+            return TalkingResponse(is_right_lang=False)
+
+        correct = user_text
+        if messages:
+            with open(path_to_audio, 'rb') as audio_file:
+                mistakes, correct = await self.find_mistakes(audio_file.read(), messages)
+        else:
+            mistakes = None
+
+        if not voice_over:
+            answer = AIAnswer(text=resp_main_dialog.answer)
+        else:
+            audio = await self.speacker_ai.generate(text=resp_main_dialog.answer)
+            answer = AIAnswer(
+                text=resp_main_dialog.answer,
+                audio=audio
+            )
+
+        result = AnswerTalkingResult(
+            answer=answer,
+            correct=correct,
+            indications=mistakes
+        )
+        return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang,
+                               end_talking=resp_main_dialog.end_talking)
 
 
 class LangLearngingAIServiceTEST:

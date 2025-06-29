@@ -35,7 +35,6 @@ class UserDictionaryWord(BaseModel):
     class Config: from_attributes = True
 
 
-
 class AIGeneratedDictionaryWord(BaseModel):
     word: AddDictionaryWord | None = None
     is_en_word: bool = True

@@ -50,7 +50,9 @@ class DictionaryService:
                 schema=AIGeneratedDictionaryWord
             )
             word_id = await self.add_word_to_dictionary(
-                word=ai_resp.word.word, ru_word=ai_resp.word.ru_word, level=ai_resp.word.level,
+                word=ai_resp.word.word.capitalize(),
+                ru_word=ai_resp.word.ru_word.capitalize(),
+                level=ai_resp.word.level,
                 db=db
             )
             await self.join_dictionary_word_to_user(word_id, user_id, db=db)

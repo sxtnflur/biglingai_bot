@@ -32,8 +32,9 @@ class DictionaryTexts:
         return '''
 ✅ <b>Слово добавлено в словарь!</b>
 
-<blockquote>{word_data.word}</blockquote> -> <blockquote>{word_data.ru_word}</blockquote>
-'''.format(word_data=word_data)
+{ru_word} ➡ {en_word}
+'''.format(ru_word=word_data.ru_word.capitalize(),
+           en_word=word_data.word.capitalize())
 
     @staticmethod
     def word_remember_card(word_data: DictionaryWord):

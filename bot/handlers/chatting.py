@@ -129,11 +129,12 @@ async def change_chatting_message_type(
     callback_data: ChangeChattingMessageTypeCallback,
     state: FSMContext
 ):
-    await state.update_data(chatting_message_type=callback_data.type)
+    new_val = ChattingMessageType(callback_data.type).next()
+    await state.update_data(chatting_message_type=new_val)
     await call.message.edit_text(
         ChattingTexts.INSTRUCTION,
         reply_markup=ChattingKeyboards.start(
-            current_message_type=ChattingMessageType(callback_data.type).next()
+            current_message_type=new_val
         )
     )
 

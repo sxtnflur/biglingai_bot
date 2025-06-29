@@ -41,8 +41,8 @@ def get_reaction(count_mistakes: int) -> ReactionTypeUnion | None:
 
 
 async def send_ai_message(
-        answer: TalkingResponse, message: Message,
-        type_: Literal['text', 'audio', 'text-and-audio']
+    answer: TalkingResponse, message: Message,
+    type_: Literal['text', 'audio', 'text-and-audio']
 ) -> None:
     if answer.result.answer.audio:
         if type_ == 'text-and-audio':

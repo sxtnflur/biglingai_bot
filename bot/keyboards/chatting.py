@@ -1,23 +1,26 @@
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 from bot.texts.base import BaseTexts
+from enums import ChattingMessageType
 from schemas.chatting import DialogType
-from ..callbacks.chatting import SelectChattingTypeCallback
+from ..callbacks.chatting import SelectChattingTypeCallback, ChangeChattingMessageTypeCallback
 from ..texts.chatting import ChattingTexts
 
 
 class ChattingKeyboards:
     @staticmethod
-    def start():
+    def start(current_message_type: ChattingMessageType):
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=ChattingTexts.START_BUTTON, callback_data='chatting_mode_start')],
+            [InlineKeyboardButton(text=ChattingTexts.CHOOSE_DIALOG_MODE, callback_data='chatting_choose_mode')],
+            [InlineKeyboardButton(text=ChattingTexts.dialog_message_type_button(current_message_type),
+                                  callback_data=ChangeChattingMessageTypeCallback(type=current_message_type.value).pack())],
             [InlineKeyboardButton(text=BaseTexts.BACK, callback_data='start')]
         ])
 
     @staticmethod
     def ai_answer():
-        return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=ChattingTexts.END_BUTTON, callback_data='start')]
-        ])
+        return ReplyKeyboardMarkup(keyboard=[
+            [KeyboardButton(text=ChattingTexts.END_BUTTON)]
+        ], resize_keyboard=True)
 
     @staticmethod
     def select_chatting_type():

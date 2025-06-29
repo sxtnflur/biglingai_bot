@@ -44,6 +44,7 @@ class BaseTexts:
     TRANSLATOR_BUTTON = '🔄 Переводчик'
     SUBS_BUTTON = '🕝 Подписки'
     REF_BUTTON = '💰 Реф. программа'
+    MAIN_MENU_BUTTON = '▶ В главное меню'
 
     @staticmethod
     def start(first_name: str, credits: int = 0, td_before_sub_end: timedelta | None = None):

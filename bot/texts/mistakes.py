@@ -26,7 +26,7 @@ class MistakesTexts:
 <b>Оригинал:</b> {mistake.user_message}
 
 ❌ <s>{mistake.incorrect}</s> ➡ <b>{mistake.correct}</b>
-ℹ <blockquote expandable>{mistake.explanation}</blockquote>
+<blockquote expandable>ℹ {mistake.explanation}</blockquote>
 📌 <b>Пример:</b> {example}
 '''
     SELECT_REASON_DELETE_MISTAKE = '''

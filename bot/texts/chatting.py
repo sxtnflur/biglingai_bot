@@ -1,3 +1,4 @@
+from enums import ChattingMessageType
 from services.ai.base import TalkingResponse
 from schemas.chatting import Mistake, MistakeSubGroup, DialogType, AnswerTalkingResult, AnswerTalkingIndications
 from services.mistakes_service import MistakeSchema
@@ -30,9 +31,16 @@ class ChattingTexts:
 Хочешь начать новый диалог?
 '''
 
-    START_BUTTON = 'Начали!'
+    CHOOSE_DIALOG_MODE = 'Выбрать режим'
     END_BUTTON = 'Закончить предварительно'
     IF_IS_NOT_ENG_MESSAGE = 'Пожалуйста, перейдите на английский язык'
+
+    NOT_ENOUGH_MESSAGES_TO_RATE_DIALOG = 'Слишком мало сообщений для оценки диалога. ' \
+                                         'Надеюсь, в следующий раз пообщаемся побольше'
+
+    @staticmethod
+    def dialog_message_type_button(current_value: ChattingMessageType):
+        return current_value.label
 
     @staticmethod
     def ai_answer_mistakes(correction: AnswerTalkingIndications):
@@ -40,8 +48,8 @@ class ChattingTexts:
             print(f'{mistake=}')
             return (
                     f"❌ <s>{mistake.incorrect}</s> ➡ <b>{mistake.correct}</b>\n"
-                    f"ℹ <blockquote expandable>{mistake.explanation}</blockquote>\n"
-                    f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
+                    f"<blockquote expandable>ℹ {mistake.explanation}</blockquote>\n"
+                    f"📌 <b>Например:</b> " + ' | '.join(list(map(lambda x: '<blockquote>{}</blockquote>'.format(x), mistake.example)))
             )
         text = '<b>Исправленный текст:</b> {}\n\n'.format(correction.correct)
         text += (

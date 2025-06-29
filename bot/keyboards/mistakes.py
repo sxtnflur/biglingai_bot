@@ -63,6 +63,9 @@ class MistakesKeyboards:
                 [InlineKeyboardButton(
                     text=MistakesTexts.START_NEW_DIALOG,
                     callback_data='chatting_mode_start'
+                )],
+                [InlineKeyboardButton(
+                    text=BaseTexts.MAIN_MENU_BUTTON, callback_data='start'
                 )]
             ])
         else:
@@ -70,6 +73,9 @@ class MistakesKeyboards:
                 [InlineKeyboardButton(
                     text=MistakesTexts.START_NEW_DIALOG,
                     callback_data='chatting_mode_start'
+                )],
+                [InlineKeyboardButton(
+                    text=BaseTexts.MAIN_MENU_BUTTON, callback_data='start'
                 )]
             ])
 

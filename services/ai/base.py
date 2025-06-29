@@ -100,7 +100,7 @@ In "end_talking" set true if the dialog should be completed.
     async def find_mistakes(
             self, user_text: str,
             messages: list[...]
-    ) -> tuple[AnswerTalkingIndications, str]:
+    ) -> tuple[AnswerTalkingIndications | None, str]:
         grammar_resp = await self.grammar_ai.process_text(user_text)
 
         print(f'{grammar_resp=}')
@@ -112,6 +112,8 @@ In "end_talking" set true if the dialog should be completed.
             temperature=0.3
         )
         print(f'{resp_indications=}')
+        if not resp_indications.mistakes:
+            resp_indications = None
         return resp_indications, correct
 
     async def send_text_talking(

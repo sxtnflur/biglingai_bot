@@ -44,27 +44,33 @@ async def send_ai_message(
     answer: TalkingResponse, message: Message,
     type_: Literal['text', 'audio', 'text-and-audio']
 ) -> None:
+    if not answer.is_right_lang:
+        await message.answer(
+            text=ChattingTexts.IF_IS_NOT_ENG_MESSAGE,
+            reply_markup=ChattingKeyboards.ai_answer()
+        )
+        return
     if answer.result.answer.audio:
         if type_ == 'text-and-audio':
             await message.answer_voice(
                 voice=BufferedInputFile(answer.result.answer.audio, filename='voice.mp3'),
-                caption=ChattingTexts.ai_answer(answer),
+                caption=ChattingTexts.ai_answer(answer.result),
                 reply_markup=ChattingKeyboards.ai_answer()
             )
         elif type_ == 'audio':
             await message.answer_voice(
                 voice=BufferedInputFile(answer.result.answer.audio, filename='voice.mp3'),
-                caption=ChattingTexts.ai_answer_mistakes(answer.result),
+                caption=ChattingTexts.ai_answer_mistakes(answer.result.correction),
                 reply_markup=ChattingKeyboards.ai_answer()
             )
         else:
             await message.answer(
-                ChattingTexts.ai_answer(answer),
+                ChattingTexts.ai_answer(answer.result),
                 reply_markup=ChattingKeyboards.ai_answer()
             )
     else:
         await message.answer(
-            ChattingTexts.ai_answer(answer),
+            ChattingTexts.ai_answer(answer.result),
             reply_markup=ChattingKeyboards.ai_answer()
         )
 
@@ -105,7 +111,7 @@ async def chatting_mode_start(
     theme = dialog_type.random_theme
 
     answer = await langlearning_openai_service.send_text_talking(
-        'Hello!', theme=theme, dialog_type=dialog_type, voice_over=False
+        'Hello!', theme=theme, dialog_type=dialog_type, voice_over=True
     )
     try:
         await call.message.edit_text(

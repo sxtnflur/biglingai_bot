@@ -100,7 +100,7 @@ In "end_talking" set true if the dialog should be completed.
     async def find_mistakes(
             self, user_text: str,
             messages: list[...]
-    ) -> tuple[list[Mistake], str]:
+    ) -> tuple[AnswerTalkingIndications, str]:
         grammar_resp = await self.grammar_ai.process_text(user_text)
 
         print(f'{grammar_resp=}')
@@ -112,7 +112,7 @@ In "end_talking" set true if the dialog should be completed.
             temperature=0.3
         )
         print(f'{resp_indications=}')
-        return resp_indications.mistakes, correct
+        return resp_indications, correct
 
     async def send_text_talking(
         self,
@@ -140,24 +140,29 @@ In "end_talking" set true if the dialog should be completed.
 
         correct = user_text
         if messages:
-            mistakes, correct = await self.find_mistakes(user_text=user_text, messages=messages)
+            correction, correct = await self.find_mistakes(user_text=user_text, messages=messages)
         else:
-            mistakes = None
+            correction = None
 
         if not voice_over:
             answer = AIAnswer(text=resp_main_dialog.answer)
         else:
-            audio = await self.speacker_ai.generate(text=resp_main_dialog.answer)
-            answer = AIAnswer(
-                text=resp_main_dialog.answer,
-                audio=audio
-            )
+            try:
+                audio = await self.speacker_ai.generate(text=resp_main_dialog.answer)
+            except Exception as e:
+                print(f'ERROR: {e}')
+                answer = AIAnswer(text=resp_main_dialog.answer)
+            else:
+                answer = AIAnswer(
+                    text=resp_main_dialog.answer,
+                    audio=audio
+                )
 
         result = AnswerTalkingResult(
             answer=answer,
             correct=correct,
             original=user_text,
-            indications=mistakes
+            correction=correction
         )
         return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang,
                                end_talking=resp_main_dialog.end_talking)

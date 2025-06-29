@@ -1,5 +1,5 @@
 from services.ai.base import TalkingResponse
-from schemas.chatting import Mistake, MistakeSubGroup, DialogType, AnswerTalkingResult
+from schemas.chatting import Mistake, MistakeSubGroup, DialogType, AnswerTalkingResult, AnswerTalkingIndications
 from services.mistakes_service import MistakeSchema
 
 
@@ -32,31 +32,30 @@ class ChattingTexts:
 
     START_BUTTON = 'Начали!'
     END_BUTTON = 'Закончить предварительно'
+    IF_IS_NOT_ENG_MESSAGE = 'Пожалуйста, перейдите на английский язык'
 
     @staticmethod
-    def ai_answer_mistakes(result: AnswerTalkingResult):
+    def ai_answer_mistakes(correction: AnswerTalkingIndications):
         def prepare_mistake(mistake: Mistake):
             print(f'{mistake=}')
             return (
                     f"❌ <s>{mistake.incorrect}</s> ➡ <b>{mistake.correct}</b>\n"
-                    f"ℹ {mistake.explanation}\n"
+                    f"ℹ <blockquote expandable>{mistake.explanation}</blockquote>\n"
                     f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
             )
-        text = '<b>Исправленный текст:</b> {}\n\n'.format(result.correct)
+        text = '<b>Исправленный текст:</b> {}\n\n'.format(correction.correct)
         text += (
                 '<b>Замечания:</b>\n{}\n\n'.format(
-                    '\n\n'.join(list(map(prepare_mistake, result.indications)))
+                    '\n\n'.join(list(map(prepare_mistake, correction.mistakes)))
                 ) + '\n<b>Продолжим общение:</b>\n')
         return text
 
     @staticmethod
-    def ai_answer(answer: TalkingResponse) -> str:
-        if not answer.is_right_lang:
-            return 'Пожалуйста, перейдите на английский язык'
-        if answer.result.indications:
-            return ChattingTexts.ai_answer_mistakes(answer.result) + answer.result.answer.text
+    def ai_answer(result: AnswerTalkingResult) -> str:
+        if result.correction:
+            return ChattingTexts.ai_answer_mistakes(result.correction) + result.answer.text
         else:
-            return answer.result.answer.text
+            return result.answer.text
 
     @staticmethod
     def result_dialog(count_messages: int, mistakes: list[MistakeSchema] | None = None) -> str:

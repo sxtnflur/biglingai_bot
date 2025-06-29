@@ -143,6 +143,7 @@ class AnswerTalking(BaseModel):
 
 
 class AnswerTalkingIndications(BaseModel):
+    correct: str
     mistakes: list['Mistake'] | None = None
 
 
@@ -150,7 +151,7 @@ class AnswerTalkingResult(BaseModel):
     answer: 'AIAnswer'
     correct: str
     original: str
-    indications: list['Mistake'] | None = None
+    correction: AnswerTalkingIndications | None = None
 
 
 class TalkingResponse(BaseModel):

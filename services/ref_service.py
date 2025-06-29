@@ -12,7 +12,7 @@ from sqlalchemy.orm import aliased, load_only
 from schemas.users import User as UserSchema
 from typing_extensions import Literal
 from .subs_service import SubsService, SubsServiceProtocol
-
+from .users_service import UsersService
 
 class RefService:
     def __init__(self, subs_service: SubsServiceProtocol):
@@ -23,36 +23,21 @@ class RefService:
             bot=bot, payload='ref{}'.format(user_tid)
         )
 
-    async def process_ref_payload(self, payload: str, bot: Bot, user_full_name: str,
-                                  user_username: str | None, user_id: int) -> DecodedRefInfo | None:
+    async def process_ref_payload(self, payload: str, user_id: int, db: AsyncSession) -> DecodedRefInfo | None:
         try:
-            ref_user_id = re.findall('ref(\d+)', payload)
+            ref_user_id = None
+            if payload.startswith('ref'):
+                ref_user_id = payload.split('ref')[-1]
+
             print(f'{ref_user_id=}')
             if ref_user_id and len(ref_user_id) == 1:
                 ref_user_id = int(ref_user_id[0])
 
                 if ref_user_id == user_id:
                     return
-                #
-                # new_credits = await self.__db.scalar(
-                #     update(models.User)
-                #     .filter(models.User.id == ref_user_id)
-                #     .values(
-                #         credits=models.User.credits + credits_for_ref,
-                #         credits_from_refs=models.User.credits_from_refs + credits_for_ref
-                #     )
-                #     .returning(models.User.credits)
-                # )
-                # await bot.send_message(
-                #     ref_user_id,
-                #     text=RefTexts.ref_notif(
-                #         full_name=user_full_name,
-                #         username=user_username,
-                #         add_credits=credits_for_ref,
-                #         all_credits=new_credits
-                #     ),
-                #     reply_markup=RefKeyboards.on_ref_event()
-                # )
+
+                if not await UsersService(db).check_if_user_exists(ref_user_id):
+                    return
                 return DecodedRefInfo(invited_by_id=ref_user_id)
         except:
             return

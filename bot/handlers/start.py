@@ -26,9 +26,9 @@ async def start_ref(
     invited_by_id = None
     if not await UsersService(db).check_if_user_exists(message.from_user.id):
         ref_info = await ref_service.process_ref_payload(
-            command.args, bot=message.bot, user_full_name=message.from_user.full_name,
-            user_username=message.from_user.username,
-            user_id=message.from_user.id
+            command.args,
+            user_id=message.from_user.id,
+            db=db
         )
         print(f'{ref_info=}')
         invited_by_id = ref_info.invited_by_id if ref_info else None
@@ -50,7 +50,6 @@ async def start(
     await state.clear()
     await message.answer(BaseTexts.start(message.from_user.first_name, user.credits, user.td_before_sub_end),
                          reply_markup=BaseKeyboards.main_menu())
-
 
 
 @router.callback_query(F.data == 'start')

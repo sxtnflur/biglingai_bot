@@ -112,9 +112,9 @@ async def end_dialog(state: FSMContext, dialog_uuid: uuid.UUID | None, db: Async
 
 @router.callback_query(F.data == 'choose_mode:chatting')
 async def start_chatting(
-    call: CallbackQuery, state: FSMContext, db: AsyncSession
+    call: CallbackQuery, state: FSMContext
 ):
-    await state.clear()
+    await state.set_state(None)
     await call.message.edit_text(
         ChattingTexts.INSTRUCTION,
         reply_markup=ChattingKeyboards.start(
@@ -149,7 +149,7 @@ async def chatting_choose_type(
         )
         return
 
-    await state.clear()
+    await state.set_state(None)
 
     await call.message.edit_text(
         ChattingTexts.INSTRUCTION,

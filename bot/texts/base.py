@@ -22,7 +22,7 @@ class BaseTexts:
 {}
 
 <b>Обучение:</b>
-<code>✏ Чаттинг</code> - <i>Общайся с ИИ на английском и получай обратную связь!</i>
+<code>💬 Чаттинг</code> - <i>Общайся с ИИ на английском и получай обратную связь!</i>
 <code>🔴 Ошибки</code> - <i>Смотри свои допущенные ошибки и отрабатывай их на заданиях!</i>
 <code>📖 Словарь</code> - <i>Тренируй словарный запас!</i>
 <code>🔄 Переводчик</code> - <i>Переводи с ИИ!</i>
@@ -38,7 +38,7 @@ class BaseTexts:
     PAGINATION_LEFT = '◀️'
     PAGINATION_RIGHT = '▶️'
     BACK = '⏪ Назад'
-    CHATTING_BUTTON = '✏ Чаттинг'
+    CHATTING_BUTTON = '💬 Чаттинг'
     DICTIONARY_BUTTON = '📖 Словарь'
     MY_MISTAKES_BUTTON = '🔴 Ошибки'
     TRANSLATOR_BUTTON = '🔄 Переводчик'

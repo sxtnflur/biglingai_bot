@@ -9,12 +9,11 @@ class ChattingMessageType(int, Enum):
     @property
     def label(self) -> str | None:
         labels: dict[ChattingMessageType, str] = {
-            ChattingMessageType.text: 'Текст',
-            ChattingMessageType.voice: 'Войсы',
-            ChattingMessageType.text_and_voice: 'Войсы + текст'
+            ChattingMessageType.text: '🖊️ Текст',
+            ChattingMessageType.voice: '🗣️ Голос',
+            ChattingMessageType.text_and_voice: '🗣️ Голос + 🖊️ Текст'
         }
         return labels.get(self)
-
 
     def next(self):
         val = int(self) + 1

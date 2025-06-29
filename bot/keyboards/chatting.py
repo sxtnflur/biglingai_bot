@@ -54,6 +54,6 @@ class ChattingKeyboards:
                 callback_data=SelectChattingTypeCallback(type=DialogType.NEWS).pack()
             )],
             [InlineKeyboardButton(
-                text=BaseTexts.BACK, callback_data='start'
+                text=BaseTexts.BACK, callback_data='choose_mode:chatting'
             )]
         ])

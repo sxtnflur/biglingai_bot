@@ -31,7 +31,7 @@ class ChattingTexts:
 Хочешь начать новый диалог?
 '''
 
-    CHOOSE_DIALOG_MODE = 'Выбрать режим'
+    CHOOSE_DIALOG_MODE = '⏩ Выбрать режим'
     END_BUTTON = 'Закончить предварительно'
     IF_IS_NOT_ENG_MESSAGE = 'Пожалуйста, перейдите на английский язык'
 
@@ -40,7 +40,7 @@ class ChattingTexts:
 
     @staticmethod
     def dialog_message_type_button(current_value: ChattingMessageType):
-        return current_value.label
+        return 'Ответ в формате: ' + current_value.label
 
     @staticmethod
     def ai_answer_mistakes(correction: AnswerTalkingIndications):

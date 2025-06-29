@@ -61,7 +61,7 @@ async def send_ai_message(
         elif message_type == ChattingMessageType.voice:
             await message.answer_voice(
                 voice=BufferedInputFile(answer.result.answer.audio, filename='voice.mp3'),
-                caption=ChattingTexts.ai_answer_mistakes(answer.result.correction),
+                caption=ChattingTexts.ai_answer_mistakes(answer.result.correction) if answer.result.correction else None,
                 reply_markup=ChattingKeyboards.ai_answer()
             )
         else:

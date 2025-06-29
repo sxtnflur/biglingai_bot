@@ -12,7 +12,7 @@ class TranslationTexts:
 
     @staticmethod
     def show_translation(translation_result: TranslationResult):
-        return '''    
+        text = '''    
 <b>Ваш текст ({}):</b>
 <blockquote>{}</blockquote>
 ---------------------------
@@ -20,3 +20,6 @@ class TranslationTexts:
 <blockquote>{}</blockquote>
 '''.format(translation_result.orig_language.upper(), translation_result.orig,
            translation_result.translated_language.upper(), translation_result.translated)
+        if len(translation_result.en_text.split()) == 1:
+            text += '\n\n<i>Добавить слово "{}" в словарь?</i>'.format(translation_result.en_text)
+        return text

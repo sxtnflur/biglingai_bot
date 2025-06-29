@@ -116,7 +116,8 @@ async def start_chatting(
     call: CallbackQuery, state: FSMContext
 ):
     await state.set_state(None)
-    await call.message.edit_reply_markup(
+    await call.message.edit_text(
+        text=ChattingTexts.START,
         reply_markup=ChattingKeyboards.start(
             current_message_type=ChattingMessageType.text_and_voice
         )
@@ -131,8 +132,7 @@ async def change_chatting_message_type(
 ):
     new_val = ChattingMessageType(callback_data.type).next()
     await state.update_data(chatting_message_type=new_val)
-    await call.message.edit_text(
-        ChattingTexts.INSTRUCTION,
+    await call.message.edit_reply_markup(
         reply_markup=ChattingKeyboards.start(
             current_message_type=new_val
         )

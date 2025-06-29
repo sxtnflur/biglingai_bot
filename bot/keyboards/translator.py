@@ -9,7 +9,7 @@ class TranslatorKeyboards:
         inl_kb = []
         if len(en_text.split()) == 1:
             inl_kb.insert(0, [InlineKeyboardButton(
-                text='📖 Добавить в словарь "{}"'.format(en_text),
+                text='📖 Добавить в словарь',
                 callback_data=AddWordToDictCallback(word=en_text).pack()
             )])
         inl_kb.append([InlineKeyboardButton(

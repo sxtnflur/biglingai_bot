@@ -40,8 +40,10 @@ async def translation(text: str, message: Message, db: AsyncSession):
         return
 
     translation = await translator_service.translate(text=text)
-    await message.answer(TranslationTexts.show_translation(translation),
-                   reply_markup=TranslatorKeyboards.translated_text(translation.en_text))
+    await message.answer(
+        TranslationTexts.show_translation(translation),
+        reply_markup=TranslatorKeyboards.translated_text(translation.en_text)
+    )
 
 
 @router.message(F.text | F.caption)

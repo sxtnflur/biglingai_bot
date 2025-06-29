@@ -9,7 +9,7 @@ from schemas.ref import UserRefInfo, DecodedRefInfo
 from sqlalchemy import select, func, exists, update, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, load_only
-from schemas.users import User as UserSchema
+from schemas import User as UserSchema
 from typing_extensions import Literal
 from .subs_service import SubsService, SubsServiceProtocol
 from .users_service import UsersService

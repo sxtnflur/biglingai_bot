@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from schemas.users import User
+from schemas import User
 
 
 class CreditsPack(BaseModel):
@@ -37,3 +37,9 @@ class SubPaymentResponse(BaseModel):
     sub: Sub
     payment: Payment
     user: User
+
+
+class UserWithSubSchema(User):
+    current_sub: Sub | None = None
+    class Config:
+        from_attributes = True

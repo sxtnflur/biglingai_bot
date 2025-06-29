@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from pydantic import BaseModel
-from .subs import Sub
 
 
 class User(BaseModel):
@@ -32,7 +31,3 @@ class User(BaseModel):
             return self.sub_end - datetime.utcnow()
 
 
-class UserWithSubSchema(User):
-    current_sub: Sub | None = None
-    class Config:
-        from_attributes = True

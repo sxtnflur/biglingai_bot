@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.types import User as TgUser
 from sqlalchemy.orm import selectinload
 from typing_extensions import Literal
-from schemas.users import User as UserSchema, UserWithSubSchema
+from schemas import User as UserSchema, UserWithSubSchema
 
 
 class UsersService:

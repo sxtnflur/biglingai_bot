@@ -68,6 +68,7 @@ async def process_pay(
             chat_id=payment.user.id,
             text='✅ Автооплата прошла успешно!\nВаша подписка продлена и окончится через <code>{}</code>'
             .format(td_to_text(payment.user.td_before_sub_end)),
+            parse_mode='HTML',
             reply_markup=BaseKeyboards.to_main_menu()
         )
     else:

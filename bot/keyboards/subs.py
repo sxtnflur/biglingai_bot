@@ -40,10 +40,10 @@ class SubsKeyboards:
         inl_kb = BaseKeyboards.create_list_kb(
             objs=subs,
             get_btn=lambda sub: InlineKeyboardButton(
-                text='{} [{} дней]'.format(sub.name, sub.days),
+                text='{}'.format(sub.name),
                 callback_data=BuySubCallback(id=sub.id).pack()
             ),
-            width=1
+            width=2
         )
         if has_autopayment:
             inl_kb.append([

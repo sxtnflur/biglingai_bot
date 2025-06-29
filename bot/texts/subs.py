@@ -16,12 +16,12 @@ class SubsTexts:
 
     CREDITS = 'Выбери набор кредитов:'
     SUBS = '<b>Выбери подходящую подписку:</b>'
-    EVERY_CREDITS_PACK = '<b>{}</b> кредитов / <b>{}</b> рублей'
-    EVERY_SUB = '<b>{sub.name}:</b> <b>{sub.days}</b> дней / <b>{sub.price}</b> рублей'
+    EVERY_CREDITS_PACK = '<b>{}</b> кредитов / <b>{}</b> руб'
+    EVERY_SUB = '<b>{sub.name}</b> — <b>{sub.days}</b> дн за <b>{sub.price}</b> руб'
 
     BUY_CREDITS_PACK = '''
 <b>Кредитов:</b> {credits}
-<b>Цена:</b> {price} рублей
+<b>Цена:</b> {price} руб
 
 Если возникнут проблемы, обращайтесь сюда: @teledeff_support
 '''
@@ -51,7 +51,7 @@ class SubsTexts:
     def credits_packs(credits_packs: list[CreditsPack]):
         return SubsTexts.CREDITS + '\n\n' + '\n'.join(list(map(
             lambda x: SubsTexts.EVERY_CREDITS_PACK.format(x.credits, x.price) + (
-                ' <i>(на {}% выгоднее)</i>'.format(x.sale) if x.sale else ''
+                ' (<s>{} руб</s>)'.format(x.sale) if x.sale else ''
             ),
             credits_packs)
         ))
@@ -59,12 +59,13 @@ class SubsTexts:
     @staticmethod
     def subs(
         subs: list[Sub],
+        current_sub: Sub | None = None,
         td_before_sub_end: timedelta | None = None,
-        has_autopayment: bool = False,
-        autopayment_duration: timedelta | None = None
+        has_autopayment: bool = False
     ):
         text = ''
-        if td_before_sub_end and td_before_sub_end > timedelta(seconds=0):
+        if current_sub and td_before_sub_end and td_before_sub_end > timedelta(seconds=0):
+            text += '✅ <b>Текущая подписка:</b> {}\n'.format(SubsTexts.EVERY_SUB.format(sub=current_sub))
             if has_autopayment:
                 text += f'🕝 <b>Следующее автосписание произойдет через:</b> ' \
                         f'<code>{td_to_text(td_before_sub_end)}</code>\n' \
@@ -79,7 +80,7 @@ class SubsTexts:
 
         text += SubsTexts.SUBS + '\n\n' + '\n'.join(list(map(
             lambda x: SubsTexts.EVERY_SUB.format(sub=x) + (
-                ' <i>(на {}% выгоднее)</i>'.format(x.sale) if x.sale else ''
+                ' (<s>{} руб</s>)'.format(x.sale) if x.sale else ''
             ), subs
         )))
         return text

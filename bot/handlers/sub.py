@@ -50,7 +50,7 @@ async def subs(
             subs,
             has_autopayment=user.is_autopayment,
             td_before_sub_end=user.td_before_sub_end,
-            autopayment_duration=user.autopayment_duration
+            current_sub=user.cu
         ),
         reply_markup=SubsKeyboards.subs(subs, has_autopayment=user.is_autopayment)
     )

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     BOT_WEBHOOK_URL: str
     BOT_WEBHOOK_ENDPOINT: str
 
-    START_CREDITS: int = 10
+    START_CREDITS: int = 30
     ADMIN_ID: int = 1304563494
 
     YOOKASSA_API_KEY: str

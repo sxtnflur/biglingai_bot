@@ -67,14 +67,14 @@ async def process_pay(
         await bot.send_message(
             chat_id=payment.user.id,
             text='✅ Автооплата прошла успешно!\nВаша подписка продлена и окончится через <code>{}</code>'
-            .format(td_to_text(payment.user.td_before_sub_end.days)),
+            .format(td_to_text(payment.user.td_before_sub_end)),
             reply_markup=BaseKeyboards.to_main_menu()
         )
     else:
         await bot.send_message(
             chat_id=payment.user.id,
             text='✅ Оплата прошла успешно!\nВаша подписка окончится через <code>{}</code>'
-            .format(td_to_text(payment.user.td_before_sub_end.days)),
+            .format(td_to_text(payment.user.td_before_sub_end)),
             parse_mode='HTML'
         )
         await bot.send_message(

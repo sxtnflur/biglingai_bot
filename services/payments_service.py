@@ -27,7 +27,8 @@ class PaymentsServiceProtocol(Protocol):
             user_tid: int,
             amount: int,
             sub_id: int,
-            order_id: str
+            order_id: str,
+            test: bool = True
     ) -> None: ...
     async def mark_as_paid(
             self, db: AsyncSession, order_id: str, bot: Bot
@@ -67,7 +68,8 @@ class PaymentsService(PaymentsServiceProtocol):
         user_tid: int,
         amount: int,
         sub_id: int,
-        order_id: str
+        order_id: str,
+        test: bool = True
     ) -> None:
         await db.execute(
             insert(models.Payment)

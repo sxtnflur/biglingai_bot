@@ -75,7 +75,8 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                     await self.payments_service.save_autopayment(
                         db=session, user_tid=user_id,
                         amount=price, sub_id=current_sub_id,
-                        order_id=payment_id
+                        order_id=payment_id,
+                        test=True
                     )
                     await session.commit()
         except Exception as e:

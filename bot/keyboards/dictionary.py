@@ -18,7 +18,7 @@ class DictionaryKeyboards:
                 text='➕', callback_data='how-to-add-word-to-dict'
             )],
             [InlineKeyboardButton(
-                text='🔁 Тренировка', callback_data='train-my-dict'
+                text='🕹️ Тренировка', callback_data='train-my-dict'
             )],
             [InlineKeyboardButton(
                 text=BaseTexts.BACK, callback_data='start'

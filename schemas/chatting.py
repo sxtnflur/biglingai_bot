@@ -149,6 +149,7 @@ class AnswerTalkingIndications(BaseModel):
 class AnswerTalkingResult(BaseModel):
     answer: 'AIAnswer'
     correct: str
+    original: str
     indications: list['Mistake'] | None = None
 
 

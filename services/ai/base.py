@@ -122,6 +122,7 @@ In "end_talking" set true if the dialog should be completed.
         messages: list[ChatCompletionMessageParam] | None = None,
         voice_over: bool = True
     ) -> TalkingResponse:
+        print(f'{messages=}')
         resp_main_dialog = await self.openai_dialog.send_text_get_schema(
             prompt=user_text,
             messages=[{'role': 'system',
@@ -154,6 +155,7 @@ In "end_talking" set true if the dialog should be completed.
         result = AnswerTalkingResult(
             answer=answer,
             correct=correct,
+            original=user_text,
             indications=mistakes
         )
         return TalkingResponse(result=result, is_right_lang=resp_main_dialog.is_right_lang,

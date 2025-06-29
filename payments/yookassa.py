@@ -112,9 +112,7 @@ class YooKassaService(YooKassaServiceABC):
         }
 
         payment = await Payment.create(data)
-
-        payment_data = json.loads(payment.json())
-        return payment_data['id']
+        return payment.id
 
     async def cancel_payment(self, payment_id: str):
         return await Payment.cancel(payment_id)

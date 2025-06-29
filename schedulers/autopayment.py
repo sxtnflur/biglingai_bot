@@ -71,6 +71,7 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                         payment_method_id=payment_method_id,
                         description='Автооплата'
                     )
+                    print(f'{payment_response.id=}')
                     await self.payments_service.save_autopayment(
                         db=session, user_tid=user_id,
                         amount=price, sub_id=current_sub_id,

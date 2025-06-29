@@ -176,7 +176,7 @@ async def chatting(
         return
 
     await chat_history_service.add_messages_to_history(
-        user_message={'role': 'user', 'content': message.text},
+        user_message={'role': 'user', 'content': answer.result.original},
         assistant_message={'role': 'assistant', 'content': answer.result.answer.text},
         user_id=message.from_user.id,
         chat_type=CHAT_TYPE

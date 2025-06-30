@@ -60,7 +60,7 @@ async def mistake_group(
     db: AsyncSession
 ):
     mistakes = await MistakesService(db).get_mistakes(
-        user_id=call.from_user.id, by_type_key=callback_data.group,
+        user_id=call.from_user.id, by_type_key=callback_data.group.replace('&', ':'),
         offset=callback_data.page * callback_data.limit,
         limit=callback_data.limit
     )

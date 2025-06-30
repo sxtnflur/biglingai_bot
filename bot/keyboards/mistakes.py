@@ -25,10 +25,11 @@ class MistakesKeyboards:
             page=page, callback_data=MistakesListCallback,
             get_btn=lambda m: InlineKeyboardButton(
                 text='{} ({})'.format(m.type.name, m.count_mistakes),
-                callback_data=MistakeGroupListCallback(group=m.type.key).pack()
+                callback_data=MistakeGroupListCallback(group=m.type.key.replace(':', '&')).pack()
             ),
             limit=limit, objs=groups,
-            additional_btns=[[InlineKeyboardButton(text=BaseTexts.BACK, callback_data='start')]]
+            additional_btns=[[InlineKeyboardButton(text=BaseTexts.BACK, callback_data='start')]],
+            width=1
         )
 
     @staticmethod

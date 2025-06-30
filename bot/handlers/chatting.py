@@ -287,8 +287,8 @@ async def chatting(
         await mistakes_service.save_mistakes(
             user_id=message.from_user.id,
             dialog_uuid=dialog_uuid,
-            mistakes=answer.result.indications,
-            user_message=message.text
+            mistakes=answer.result.correction.mistakes,
+            user_message=answer.result.original
         )
 
     reaction = get_reaction(len(answer.result.correction.mistakes) if answer.result.correction else 0)

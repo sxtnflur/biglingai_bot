@@ -50,6 +50,12 @@ async def process_pay(
     payment = await payments_service.mark_as_paid(
         db=db, bot=bot, order_id=order_id
     )
+
+    try:
+        scheduler.autopayment_scheduler.remove_user_job(payment.user.id)
+    except:
+        pass
+
     text = ''
     if save_payment_method_id:
         await subs_service.add_autopayment_to_user(

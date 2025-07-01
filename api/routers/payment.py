@@ -64,12 +64,12 @@ async def process_pay(
         text += '✅ Способ оплаты {} сохранен\n\n'.format(
             f'<i>{payment_method_title}</i>' if payment_method_title else ''
         )
-        text += '✅ Дата автооплаты перенесена на <code>{}</code> по часовому поясу UTC+00:00\n\n'\
+        text += '✅ Следующиая дата автосписания - <code>{}</code> по часовому поясу UTC+00:00\n\n'\
             .format(text_sub_end)
 
     elif payment.user.is_autopayment and payment.user.payment_method_id:
         scheduler.autopayment_scheduler.add_job_to_user(payment.user.id, sub_end=payment.user.sub_end)
-        text += '✅ Дата автооплаты {} перенесена на <code>{}</code> по часовому поясу UTC+00:00\n\n'.format(
+        text += '✅ Следующиая дата автосписания -  <code>{}</code> по часовому поясу UTC+00:00\n\n'.format(
             f'<i>{payment_method_title}</i>' if payment_method_title else '',
             text_sub_end
         )
@@ -85,7 +85,7 @@ async def process_pay(
     else:
         await bot.send_message(
             chat_id=payment.user.id,
-            text=text + '✅ Оплата прошла успешно!\nВаша подписка окончится через <code>{}</code>'
+            text='✅ Оплата прошла успешно!\nВаша подписка окончится через <code>{}</code>\n\n' + text
             .format(td_to_text(payment.user.td_before_sub_end)),
             parse_mode='HTML'
         )

@@ -127,6 +127,6 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
 
         for user in users:
             self.add_job_to_user(user_id=user.id,
-                                 sub_end=datetime.utcnow() + timedelta(seconds=10))  # sub_end=user.sub_end)
+                                 sub_end=user.sub_end)  # sub_end=user.sub_end)
 
         await self.logger.log_by_telegram_bot('Задачи на автооплаты установлены')

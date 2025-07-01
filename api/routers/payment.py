@@ -85,8 +85,9 @@ async def process_pay(
     else:
         await bot.send_message(
             chat_id=payment.user.id,
-            text='✅ Оплата прошла успешно!\nВаша подписка окончится через <code>{}</code>\n\n' + text
-            .format(td_to_text(payment.user.td_before_sub_end)),
+            text='✅ Оплата прошла успешно!\nВаша подписка окончится через <code>{}</code>\n\n'
+                 .format(td_to_text(payment.user.td_before_sub_end))
+                 + text,
             parse_mode='HTML'
         )
         await bot.send_message(

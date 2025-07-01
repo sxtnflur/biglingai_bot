@@ -12,6 +12,7 @@ class User(BaseModel):
     sub_end: datetime | None = None
     paid_refs_percent: int | None = None
 
+    payment_method_id: str | None = None
     autopayment_duration: timedelta | None = None
     is_autopayment: bool = False
 

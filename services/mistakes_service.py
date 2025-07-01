@@ -167,7 +167,8 @@ class MistakesService:
 
     async def get_random_mistake(
         self, user_id: int,
-        by_type_key: str | None = None
+        by_type_key: str | None = None,
+        by_dialog_uuid: str | UUID | None = None
     ) -> MistakeSchema | None:
         stmt = (
             select(models.Mistake)
@@ -177,6 +178,10 @@ class MistakesService:
         )
         if by_type_key:
             stmt = stmt.filter(models.Mistake.type_key == by_type_key)
+        if by_dialog_uuid:
+            if isinstance(by_dialog_uuid, str):
+                by_dialog_uuid = UUID(by_dialog_uuid)
+            stmt = stmt.filter(models.Mistake.dialog_uuid == by_dialog_uuid)
 
         stmt = stmt.order_by(func.random()).limit(1)
         obj = await self.__db.scalar(stmt)

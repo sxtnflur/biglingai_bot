@@ -1,3 +1,5 @@
+import random
+
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -78,13 +80,20 @@ async def dict_train(
                 call.message.html_text.find('<blockquote>') + len('<blockquote>'):
                 call.message.html_text.find('</blockquote>')
                 ]
-
-    word_data = await dictionary_service.get_random_user_word_from_dictionary(
-        user_id=call.from_user.id, db=db, exclude_words=[last_word]
+    count_available_words = await dictionary_service.count_user_dict_words(
+        user_id=call.from_user.id, db=db,
+        only_cant_be_worked=True, only_not_worked=True
     )
-    if not word_data:
+
+    # Если слов меньше 10, берем слово из чужого словаря с элементом рандома 50/50
+    if count_available_words < 10 and random.randint(0, 1):
+        user_level = await dictionary_service.count_user_level(
+            user_id=call.from_user.id, db=db
+        )
         word = await dictionary_service.get_random_word_from_dictionary(
-            db=db, user_id=call.from_user.id, user_level=1,
+            db=db,
+            user_id=call.from_user.id,
+            user_level=user_level,
             exclude_words=[last_word]
         )
         await dictionary_service.join_dictionary_word_to_user(
@@ -92,6 +101,9 @@ async def dict_train(
         )
         learning_rate = 0
     else:
+        word_data = await dictionary_service.get_random_user_word_from_dictionary(
+            user_id=call.from_user.id, db=db, exclude_words=[last_word]
+        )
         word = word_data.word
         learning_rate = word_data.user_info.learning_rate
 
@@ -115,7 +127,7 @@ async def dict_train(
             reply_markup=DictionaryKeyboards.exit()
         )
         await state.update_data(
-            dict_train_translate_word=word.ru_word,
+            dict_train_translate_words=list(map(lambda x: x.lower(), word.ru_words)),
             dict_train_last_word=word.word,
             dict_train_last_word_id=word.id
         )
@@ -127,21 +139,21 @@ async def train_get_translate_word(
     m: Message, state: FSMContext, db: AsyncSession
 ):
     data = await state.get_data()
-    dict_train_translate_word = data.get('dict_train_translate_word')
+    dict_train_translate_words = data.get('dict_train_translate_words')
     last_word = data.get('dict_train_last_word')
     dict_train_last_word_id = data.get('dict_train_last_word_id')
 
     await state.clear()
 
-    is_right = m.text.strip().lower() == dict_train_translate_word.lower()
+    is_right = m.text.strip().lower() in dict_train_translate_words
 
     if is_right:
         await m.answer(
-            text=DictionaryTexts.train_word_success(ru_word=dict_train_translate_word)
+            text=DictionaryTexts.train_word_success(ru_words=dict_train_translate_words)
         )
     else:
         await m.answer(
-            text=DictionaryTexts.train_word_wrong(ru_word=dict_train_translate_word)
+            text=DictionaryTexts.train_word_wrong(ru_words=dict_train_translate_words)
         )
 
     # Изменяем рейтинг изучения юзера на этом слове
@@ -193,7 +205,7 @@ async def train_get_translate_word(
             reply_markup=DictionaryKeyboards.exit()
         )
         await state.update_data(
-            dict_train_translate_word=word.ru_word,
+            dict_train_translate_words=list(map(lambda x: x.lower(), word.ru_words)),
             dict_train_last_word=word.word,
             dict_train_last_word_id=word.id
         )

@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, ARRAY, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, IntPk
 
@@ -8,7 +8,7 @@ class DictionaryWord(Base):
 
     id: Mapped[IntPk]
     word: Mapped[str]
-    ru_word: Mapped[str]
+    ru_words: Mapped[list[str]] = mapped_column(ARRAY(String))
     level: Mapped[int]
 
 

@@ -100,7 +100,7 @@ class SubsService(SubsServiceProtocol):
         await db.execute(
             update(models.User)
             .filter(models.User.id == user_id)
-            .values(is_autopayment=False)
+            .values(is_autopayment=False, payment_method_id=None)
         )
 
 

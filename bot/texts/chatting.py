@@ -61,14 +61,17 @@ class ChattingTexts:
             return (
                     f"❌ <s>{mistake.incorrect}</s> ➡ <b>{mistake.correct}</b>\n"
                     f"<blockquote expandable>ℹ {mistake.explanation}</blockquote>\n"
-                    f"📌 <b>Например:</b> " + ' | '.join(list(map(lambda x: '<blockquote>{}</blockquote>'.format(x), mistake.example)))
+                    f"📌 <b>Например:</b> " +
+            ''.join(list(map(
+                lambda x: '<blockquote>{}</blockquote>'.format(x),
+                mistake.example
+            )))
             )
         text = '<b>Исправленный текст:</b> {}\n\n'.format(correction.correct)
-        text += (
-                '<b>Замечания:</b>\n{}\n\n'.format(
+        text += ('<b>Замечания:</b>\n{}\n\n'.format(
                     '\n\n'.join(list(map(prepare_mistake, correction.mistakes)))
-                ) + '\n<b>Продолжим общение:</b>\n')
-        return text
+                ))
+        return text.strip()
 
     @staticmethod
     def ai_answer(result: AnswerTalkingResult) -> str:

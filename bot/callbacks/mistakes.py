@@ -20,7 +20,8 @@ class MistakeGroupListCallback(ScrollingCallback, prefix='mistake-group'):
 
 
 class TrainMistakeGroupCallback(CallbackData, prefix='train-mistake-group'):
-    group: str
+    group: str | None = None
+    dialog_uuid: str | None = None
 
 
 class TrainMistakesDialogCallback(CallbackData, prefix='train-mistake-dialog'):
@@ -30,7 +31,8 @@ class TrainMistakesDialogCallback(CallbackData, prefix='train-mistake-dialog'):
 class TrainMistakeGroupAnswerCallback(CallbackData, prefix='train-mistake-group-answer'):
     is_right: bool
     mistake_id: int
-    group: str
+    group: str | None = None
+    dialog_uuid: str | None = None
 
     @classmethod
     def from_callback_data(cls, callback_data: str) -> Optional['TrainMistakeGroupAnswerCallback']:

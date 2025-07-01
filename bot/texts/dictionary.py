@@ -29,8 +29,8 @@ class DictionaryTexts:
         return '''
 ✅ <b>Слово добавлено в словарь!</b>
 
-"{ru_word}" ➡ "{en_word}"
-'''.format(ru_word=word_data.ru_word.capitalize(),
+"{en_word}" ➡  {ru_words}
+'''.format(ru_words=', '.join(list(map(lambda x: f'"{x}"', word_data.ru_words))),
            en_word=word_data.word.capitalize())
 
     @staticmethod
@@ -42,19 +42,19 @@ class DictionaryTexts:
 <blockquote>{}</blockquote>
 
 <b>Перевод:</b> <span class="tg-spoiler">{}</span>
-'''.format(word_data.word, word_data.ru_word)
+'''.format(word_data.word, ', '.join(word_data.ru_words))
 
     @staticmethod
     def word_remember_task(word: str):
         return '✍ <b>Введи перевод слова:</b>\n<blockquote>{word}</blockquote>'.format(word=word)
 
     @staticmethod
-    def train_word_success(ru_word: str):
-        return '✅ <b>Все верно! Перевод:</b> <blockquote>{}</blockquote>'.format(ru_word)
+    def train_word_success(ru_words: list[str]):
+        return '✅ <b>Все верно! Перевод:</b> <blockquote>{}</blockquote>'.format(', '.join(ru_words))
 
     @staticmethod
-    def train_word_wrong(ru_word: str):
-        return '❌ <b>Увы, неверно! Правильный перевод:</b> <blockquote>{}</blockquote>'.format(ru_word)
+    def train_word_wrong(ru_words: list[str]):
+        return '❌ <b>Увы, неверно! Правильный перевод:</b> <blockquote>{}</blockquote>'.format(', '.join(ru_words))
 
     @staticmethod
     def word_can_be_marked_as_worked(word: str):
@@ -63,6 +63,8 @@ class DictionaryTexts:
     @staticmethod
     def dict_words_list(user_words: list[UserDictionaryWord]):
         def get_level_circle(learning_rate: int, can_be_worked: bool):
+            if can_be_worked:
+                return '🟢'
             if learning_rate <= 1:
                 return '🔴'
             elif learning_rate <= 5:
@@ -75,7 +77,7 @@ class DictionaryTexts:
             print(f'{uw.learning_rate=}')
 
         words_texts = '\n'.join([
-            f'• <code>{uw.word.word}</code>    ➡    <code>{uw.word.ru_word}</code> ' \
+            f'• <code>{uw.word.word}</code> ➡ {", ".join(list(map(lambda x: f"<code>{x}</code>", uw.word.ru_words)))} ' \
             f'{get_level_circle(uw.learning_rate, uw.can_be_mark_as_worked)}'.ljust(33)
             for uw in user_words
         ])

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class AddDictionaryWord(BaseModel):
     word: str
-    ru_word: str
+    ru_words: list[str]
     level: int
 
 

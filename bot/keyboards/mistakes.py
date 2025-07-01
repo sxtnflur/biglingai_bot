@@ -28,7 +28,11 @@ class MistakesKeyboards:
                 callback_data=MistakeGroupListCallback(group=m.type.key.replace(':', '&')).pack()
             ),
             limit=limit, objs=groups,
-            additional_btns=[[InlineKeyboardButton(text=BaseTexts.BACK, callback_data='start')]],
+            additional_btns=[
+                [InlineKeyboardButton(text=MistakesTexts.WORK_OUT_MISTAKE_BUTTON,
+                                      callback_data=TrainMistakeGroupCallback().pack())],
+                [InlineKeyboardButton(text=BaseTexts.BACK, callback_data='start')]
+                ],
             width=1
         )
 
@@ -59,7 +63,7 @@ class MistakesKeyboards:
             return InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(
                     text=MistakesTexts.WORK_OUT_MISTAKE_BUTTON,
-                    callback_data=MistakesListCallback().pack()  # MistakesListByDialogCallback(dialog_uuid=dialog_uuid.__str__()).pack()
+                    callback_data=TrainMistakeGroupCallback(dialog_uuid=dialog_uuid).pack()  # MistakesListByDialogCallback(dialog_uuid=dialog_uuid.__str__()).pack()
                 )],
                 [InlineKeyboardButton(
                     text=MistakesTexts.START_NEW_DIALOG,
@@ -172,18 +176,23 @@ class MistakesKeyboards:
 
 
     @staticmethod
-    def train_mistake_choice(choices: list[ResChoice], mistake_id: int, group: str) -> InlineKeyboardMarkup:
+    def train_mistake_choice(
+            choices: list[ResChoice], mistake_id: int,
+            group: str | None = None, dialog_uuid: str | None = None
+    ) -> InlineKeyboardMarkup:
         btns = BaseKeyboards.create_list_kb(
             get_btn=lambda x: InlineKeyboardButton(
                 text=str(x.id) + '️⃣ ',
                 callback_data=TrainMistakeGroupAnswerCallback(
                     is_right=x.is_right, mistake_id=mistake_id,
-                    group=group
+                    group=group, dialog_uuid=dialog_uuid
                 ).pack()
             ),
             objs=choices,
             width=4
         )
-        return InlineKeyboardMarkup(inline_keyboard=btns + [[InlineKeyboardButton(
-            text=MistakesTexts.EXIT_BUTTON, callback_data=MistakeGroupListCallback(group=group).pack()
-        )]])
+        btns.append([InlineKeyboardButton(
+            text=MistakesTexts.EXIT_BUTTON,
+            callback_data=MistakeGroupListCallback(group=group).pack() if group else 'start'
+        )])
+        return InlineKeyboardMarkup(inline_keyboard=btns)

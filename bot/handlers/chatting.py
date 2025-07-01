@@ -52,27 +52,32 @@ async def send_ai_message(
             reply_markup=ChattingKeyboards.ai_answer()
         )
         return
+
+    if answer.result.correction:
+        await message.answer(
+            text=ChattingTexts.ai_answer_mistakes(answer.result.correction)
+        )
+
     if answer.result.answer.audio:
         if message_type == ChattingMessageType.text_and_voice:
             await message.answer_voice(
                 voice=BufferedInputFile(answer.result.answer.audio, filename='voice.mp3'),
-                caption=ChattingTexts.ai_answer(answer.result),
+                caption=answer.result.answer.text,
                 reply_markup=ChattingKeyboards.ai_answer()
             )
         elif message_type == ChattingMessageType.voice:
             await message.answer_voice(
                 voice=BufferedInputFile(answer.result.answer.audio, filename='voice.mp3'),
-                caption=ChattingTexts.ai_answer_mistakes(answer.result.correction) if answer.result.correction else None,
                 reply_markup=ChattingKeyboards.ai_answer()
             )
         else:
             await message.answer(
-                ChattingTexts.ai_answer(answer.result),
+                answer.result.answer.text,
                 reply_markup=ChattingKeyboards.ai_answer()
             )
     else:
         await message.answer(
-            ChattingTexts.ai_answer(answer.result),
+            answer.result.answer.text,
             reply_markup=ChattingKeyboards.ai_answer()
         )
 

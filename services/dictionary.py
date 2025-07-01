@@ -25,11 +25,11 @@ class DictionaryService:
         )
 
     async def add_word_to_dictionary(
-            self, word: str, ru_word: str, level: int, db: AsyncSession
+            self, word: str, ru_words: list[str], level: int, db: AsyncSession
     ) -> int:
         return await db.scalar(
             insert(models.DictionaryWord)
-            .values(word=word, ru_word=ru_word, level=level)
+            .values(word=word, ru_words=ru_words, level=level)
             .returning(models.DictionaryWord.id)
         )
 
@@ -51,7 +51,7 @@ class DictionaryService:
             )
             word_id = await self.add_word_to_dictionary(
                 word=ai_resp.word.word.capitalize(),
-                ru_word=ai_resp.word.ru_word.capitalize(),
+                ru_words=list(map(lambda x: x.capitalize(), ai_resp.word.ru_words)),
                 level=ai_resp.word.level,
                 db=db
             )
@@ -80,7 +80,10 @@ class DictionaryService:
         res = await db.execute(stmt)
         if not res:
             return
-        word, user_info = res.fetchone()
+        res = res.fetchone()
+        if not res:
+            return
+        word, user_info = res
         if not word or not user_info:
             return
         print(f'{word.__dict__=}')
@@ -91,34 +94,39 @@ class DictionaryService:
         )
 
     async def get_random_word_from_dictionary(
-        self, db: AsyncSession, user_id: int, user_level: int = 1,
+        self, db: AsyncSession, user_id: int, user_level: float = 1,
+        exclude_all_user_words: bool = False,
         exclude_words: list[str] | None = None
     ) -> DictionaryWord:
-        '''
+        """
         Возвращает случайное слово ближайшее по уровню к указанному и не изученное пользователем
 
+        :param exclude_all_user_words:
         :param db:
         :param exclude_words:
         :param user_id: ID юзера
         :param user_level: Уровень юзера
         :return:
-        '''
+        """
         # Подзапрос: id всех слов, где is_worked = True у этого пользователя
         subq_worked_words = (
             select(models.UserDictionaryWord.word_id)
             .where(
-                models.UserDictionaryWord.user_id == user_id,
-                models.UserDictionaryWord.is_worked == True
+                models.UserDictionaryWord.user_id == user_id
             )
-        ).subquery()
+        )
+        if not exclude_all_user_words:
+            subq_worked_words = subq_worked_words.filter(
+                models.UserDictionaryWord.is_worked.is_(True)
+            )
 
         # Слова, подходящие по уровню и не отмеченные как is_worked
         stmt = (
-            select(DictionaryWord)
+            select(models.DictionaryWord)
             .where(
-                ~models.DictionaryWord.id.in_(subq_worked_words)
+                ~models.DictionaryWord.id.in_(subq_worked_words.subquery())
             )
-            .order_by(func.abs(DictionaryWord.level - user_level))  # ближайший уровень
+            .order_by(func.abs(models.DictionaryWord.level - user_level))  # ближайший уровень
             .limit(1)  # ограничим для случайного выбора
         )
         if exclude_words:
@@ -171,10 +179,9 @@ class DictionaryService:
     async def count_user_dictionary_words(
         self, user_id: int, db: AsyncSession
     ) -> int:
-        return await db.scalar(
-            select(func.count())
-            .select_from(models.UserDictionaryWord)
-            .filter(models.UserDictionaryWord.user_id == user_id)
+        return await self.count_user_dict_words(
+            user_id=user_id, db=db,
+            only_not_worked=False, only_cant_be_worked=False
         )
 
     async def get_user_dictionary_words(
@@ -214,3 +221,32 @@ class DictionaryService:
 
         objs = await db.scalars(stmt)
         return list(map(UserDictionaryWord.model_validate, objs))
+
+    async def count_user_dict_words(
+            self, user_id: int, db: AsyncSession,
+            only_not_worked: bool = True,
+            only_cant_be_worked: bool = True
+    ) -> int:
+        stmt = (
+            select(func.count())
+            .filter(
+                models.UserDictionaryWord.user_id == user_id
+            )
+        )
+        if only_not_worked:
+            stmt = stmt.filter(models.UserDictionaryWord.is_worked.is_(False))
+        if only_cant_be_worked:
+            stmt = stmt.filter(models.UserDictionaryWord.can_be_mark_as_worked.is_(False))
+        return await db.scalar(stmt)
+
+    async def count_user_level(self, user_id: int, db: AsyncSession) -> float:
+        stmt = (
+            select(func.avg(models.DictionaryWord.level))
+            .select_from(models.UserDictionaryWord)
+            .filter(
+                models.UserDictionaryWord.word_id == models.DictionaryWord.id,
+                models.UserDictionaryWord.user_id == user_id,
+                models.UserDictionaryWord.can_be_mark_as_worked.is_(True)
+            )
+        )
+        return await db.scalar(stmt) or 0

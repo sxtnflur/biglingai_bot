@@ -125,13 +125,16 @@ async def delete_mistake(
 
 
 async def create_train_mistake_group(
-    user_id: int, group: str, db: AsyncSession
+    user_id: int, db: AsyncSession,
+    by_group: str | None = None,
+    by_dialog_uuid: str | None = None
 ) -> dict:
     random_mistake = await MistakesService(db).get_random_mistake(
-        user_id=user_id, by_type_key=group
+        user_id=user_id, by_type_key=by_group, by_dialog_uuid=by_dialog_uuid
     )
-    prompt = (f'Придумай задание для того, чтобы отточить ошибки из группы {random_mistake.subgroup.subgroup_label}. '
-              f'Пример ошибки: {random_mistake.user_message}. '
+    prompt = (f'Придумай задание для того, чтобы отточить ошибки' +
+              f'из группы {random_mistake.type.name}' if by_group else ''
+              f'\nПример ошибки: {random_mistake.user_message}. '
               f'Пояснение к ошибке: {random_mistake.explanation}')
     task = await langlearning_openai_service.choose_one_variant(prompt=prompt)
     return dict(
@@ -139,7 +142,8 @@ async def create_train_mistake_group(
         reply_markup=MistakesKeyboards.train_mistake_choice(
             choices=task.enumerated_choices,
             mistake_id=random_mistake.id,
-            group=group
+            group=by_group,
+            dialog_uuid=by_dialog_uuid
         )
     )
 
@@ -158,8 +162,9 @@ async def train_mistake_group(
 
     message_data = await create_train_mistake_group(
         user_id=call.from_user.id,
-        group=callback_data.group,
-        db=db
+        db=db,
+        by_group=callback_data.group,
+        by_dialog_uuid=callback_data.dialog_uuid
     )
     await call.message.answer(**message_data)
 
@@ -209,29 +214,8 @@ async def train_mistake_answer(
 
     message_data = await create_train_mistake_group(
         user_id=call.from_user.id,
-        group=callback_data.group,
-        db=db
+        db=db,
+        by_group=callback_data.group,
+        by_dialog_uuid=callback_data.dialog_uuid
     )
     await call.message.answer(**message_data)
-
-
-@router.callback_query(MistakesListByDialogCallback.filter())
-async def mistakes_by_dialog(
-    call: CallbackQuery, callback_data: MistakesListByDialogCallback,
-    db: AsyncSession
-):
-    mistakes = await MistakesService(db).get_mistakes(
-        user_id=call.from_user.id,
-        by_dialog_uuid=UUID(callback_data.dialog_uuid),
-        offset=callback_data.page * callback_data.limit,
-        limit=callback_data.limit
-    )
-    await call.message.edit_text(
-        text=MistakesTexts.MISTAKES_LIST,
-        reply_markup=MistakesKeyboards.mistakes_list_by_dialog_uuid(
-            mistakes=mistakes,
-            dialog_uuid=callback_data.dialog_uuid,
-            limit=callback_data.limit,
-            page=callback_data.page
-        )
-    )

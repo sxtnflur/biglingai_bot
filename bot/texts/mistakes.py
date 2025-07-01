@@ -53,7 +53,7 @@ class MistakesTexts:
     def mistake(mistake: MistakeSchema) -> str:
         return MistakesTexts.MISTAKE.format(
             mistake=mistake,
-            example=' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
+            example=''.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
         )
 
     @staticmethod

@@ -64,7 +64,7 @@ async def process_pay(
         text += '✅ Способ оплаты {}сохранен\n\n'.format(
             f'<i>{payment_method_title}</i> ' if payment_method_title else ''
         )
-        text += 'Следующиая дата автосписания - <code>{}</code> по часовому поясу UTC+00:00\n\n'\
+        text += 'Следующая дата автосписания - <code>{}</code> по часовому поясу UTC+00:00\n\n'\
             .format(text_sub_end)
 
     elif payment.user.is_autopayment and payment.user.payment_method_id:

@@ -40,9 +40,8 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                     )
                     .values(
                         sub_end=(
-                                func.coalesce(models.User.sub_end, func.now()) +
-                                func.cast(func.cast(models.Sub.days, String) + ' minutes', INTERVAL)
-                        ) #TODO: изменить minutes -> days
+                            func.now() + func.cast(func.cast(models.Sub.days, String) + ' minutes', INTERVAL)
+                        )  # TODO: изменить minutes -> days
                     )
                     .returning(models.User.payment_method_id, models.Sub.price,
                                models.User.current_sub_id, models.User.sub_end)
@@ -58,7 +57,7 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                 print(f'{current_sub_id=}')
 
                 if not payment_method_id:
-                    self.scheduler.remove_job(get_job_id(user_id))
+                    self.remove_user_job(user_id)
                     await session.rollback()
                     await self.logger.log_by_telegram_bot(
                         f'Автооплата для пользователя {user_id} не прошла и дальнейшие автооплаты отменены, '

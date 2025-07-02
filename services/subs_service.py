@@ -105,7 +105,6 @@ class SubsService(SubsServiceProtocol):
             .values(is_autopayment=False, payment_method_id=None)
         )
 
-
     async def add_autopayment_to_user(self,
                                       user_id: int,
                                       payment_method_id: str,

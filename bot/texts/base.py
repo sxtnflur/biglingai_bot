@@ -19,8 +19,6 @@ def td_to_text(td: timedelta) -> str:
 
 class BaseTexts:
     START = '''
-{}
-
 <b>Обучение:</b>
 <code>💬 Чаттинг</code> - <i>Общайся с ИИ на английском и получай обратную связь!</i>
 <code>🔴 Ошибки</code> - <i>Смотри свои допущенные ошибки и отрабатывай их на заданиях!</i>
@@ -47,9 +45,5 @@ class BaseTexts:
     MAIN_MENU_BUTTON = '▶ В главное меню'
 
     @staticmethod
-    def start(first_name: str, credits: int = 0, td_before_sub_end: timedelta | None = None):
-        return BaseTexts.START.format(
-            '\n\n' + (
-            BaseTexts.SUB.format(td_to_text(td_before_sub_end))
-            if td_before_sub_end and td_before_sub_end > timedelta(seconds=0) else '')
-        )
+    def start(*args, **kwargs):
+        return BaseTexts.START

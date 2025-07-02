@@ -6,7 +6,8 @@ class MistakesTexts:
     GROUPS_IF_HAS_MISTAKES = '''
 <b>Здесь хранятся твои ошибки. Чем их больше, тем лучше! Главное не забывай их отрабатывать!</b>
 {}
-<i>Чтобы посмотреть и отработать ошибки выбери одну из групп:</i>
+<i>Чтобы посмотреть и отработать ошибки выбери одну из групп
+или нажми "🕹️ Работать над ошибками", чтоб отработать ошибки из всех групп в случайном порядке</i>
 '''
 
     GROUPS_IF_NO_MISTAKES = '''
@@ -17,7 +18,7 @@ class MistakesTexts:
     MISTAKES_LIST = '''
 Нажмите на ошибку, чтобы посмотреть информацию о ней
 
-или "🕹️ Квиз" - для отработки ошибок из этой группы на заданиях
+или "🕹️ Работать над ошибками" - для отработки ошибок из этой группы на заданиях
 '''
 
     MISTAKE = '''
@@ -40,7 +41,7 @@ class MistakesTexts:
     I_WORKED_OUT_MISTAKE_REASON_DELETE_BUTTON = 'Я отработал эту ошибку!'
     ERROR_MISTAKE_REASON_DELETE_BUTTON = 'Ошибка выявлена неправильно!'
     EXIT_BUTTON = 'Выйти'
-    WORK_OUT_MISTAKE_BUTTON = '🕹️ Квиз'
+    WORK_OUT_MISTAKE_BUTTON = '🕹️ Работать над ошибками'
     START_NEW_DIALOG = 'Начать новый диалог'
 
     @staticmethod
@@ -53,7 +54,7 @@ class MistakesTexts:
     def mistake(mistake: MistakeSchema) -> str:
         return MistakesTexts.MISTAKE.format(
             mistake=mistake,
-            example=''.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
+            example=''.join(list(map(lambda x: '<blockquote>{}</blockquote>'.format(x), mistake.example)))
         )
 
     @staticmethod

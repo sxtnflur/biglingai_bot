@@ -214,7 +214,6 @@ class DialogType(StrEnum):
         return labels[self]
 
 
-
 dialog_types_prompts = {
     DialogType.SMALL_TALK: "Keep conversation short (3-5 exchanges). Current theme: {theme}",
     DialogType.LONG_TALK: "Ask follow-up questions to continue topic: {theme}",

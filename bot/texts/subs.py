@@ -17,7 +17,7 @@ class SubsTexts:
     CREDITS = 'Выбери набор кредитов:'
     SUBS = '<b>Выбери подходящую подписку:</b>'
     EVERY_CREDITS_PACK = '<b>{}</b> кредитов / <b>{}</b> руб'
-    EVERY_SUB = '<b>{sub.name}</b> — <b>{sub.days}</b> дн за <b>{sub.price}</b> руб'
+    EVERY_SUB = '<b>{sub.name}</b> — <b>{sub.price}</b> руб'
 
     BUY_CREDITS_PACK = '''
 <b>Кредитов:</b> {credits}
@@ -68,7 +68,7 @@ class SubsTexts:
             text += '✅ <b>Текущая подписка:</b> {}\n'.format(SubsTexts.EVERY_SUB.format(sub=current_sub))
             if has_autopayment:
                 text += f'🕝 <b>Следующее автосписание произойдет через:</b> ' \
-                        f'<code>{td_to_text(td_before_sub_end)}</code>\n' \
+                        f'<code>{td_to_text(td_before_sub_end)}</code>\n\n' \
                         f'<blockquote>Чтобы отменить автосписание, нажмите кнопку ' \
                         f'"❌ Отменить автопродление"</blockquote>\n'
             else:
@@ -77,6 +77,13 @@ class SubsTexts:
 
             text += '<blockquote>Если вы купите подписку, ' \
                     'ваша текущая подписка продлится на выбранное время</blockquote>\n\n'
+        else:
+            text += '''💬🎙️ Практика разговорного английского с аналитикой ошибок
+🎭 7 уникальных режимов общения, и каждый содержит десятки тем
+🔴 Хранение и отработка твоих ошибок в квизах
+🔄 ИИ-переводчик
+📖 Повышение словарного запаса в Словаре, который составляют участники бота, в том числе и ты\n\n
+'''
 
         text += SubsTexts.SUBS + '\n\n' + '\n'.join(list(map(
             lambda x: SubsTexts.EVERY_SUB.format(sub=x) + (

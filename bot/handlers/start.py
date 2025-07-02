@@ -38,7 +38,7 @@ async def start_ref(
         start_credits=(settings.START_CREDITS or 0)
     )
     await state.clear()
-    await message.answer(BaseTexts.start(message.from_user.first_name, user.credits, user.td_before_sub_end),
+    await message.answer(BaseTexts.start(),
                          reply_markup=BaseKeyboards.main_menu())
 
 
@@ -48,7 +48,7 @@ async def start(
 ):
     user = await UsersService(db).add_user_from_tguser(message.from_user)
     await state.clear()
-    await message.answer(BaseTexts.start(message.from_user.first_name, user.credits, user.td_before_sub_end),
+    await message.answer(BaseTexts.start(),
                          reply_markup=BaseKeyboards.main_menu())
 
 
@@ -59,5 +59,5 @@ async def start_call(
     await state.clear()
     user = await UsersService(db).get_user(call.from_user.id)
     await call.message.delete_reply_markup()
-    await call.message.answer(BaseTexts.start(call.from_user.first_name, user.credits, user.td_before_sub_end),
+    await call.message.answer(BaseTexts.start(),
                               reply_markup=BaseKeyboards.main_menu())

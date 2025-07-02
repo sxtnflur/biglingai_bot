@@ -20,6 +20,10 @@ class Sub(BaseModel):
 
     class Config: from_attributes = True
 
+    # @property
+    # def name(self):
+    #     return f'{self.days} дн'
+
 
 class Payment(BaseModel):
     id: int

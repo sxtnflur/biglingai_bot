@@ -73,6 +73,8 @@ class SubsService(SubsServiceProtocol):
     async def create_or_increase_sub_by_days(
         self, days: int, user_id: int, db: AsyncSession
     ) -> datetime:
+        # TODO: изменить minutes -> days
+        td = timedelta(minutes=days)
         return await db.scalar(
             update(models.User)
             .filter(models.User.id == user_id)
@@ -80,8 +82,8 @@ class SubsService(SubsServiceProtocol):
                 (and_(
                     models.User.sub_end.isnot(None),
                     models.User.sub_end >= func.now()
-                ), models.User.sub_end + timedelta(days=days)),
-                else_=func.now() + timedelta(days=days)
+                ), models.User.sub_end + td),
+                else_=func.now() + td
             ))
             .returning(models.User.sub_end)
         )

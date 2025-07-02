@@ -41,18 +41,18 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                     .values(
                         sub_end=(
                                 func.coalesce(models.User.sub_end, func.now()) +
-                                func.cast(func.cast(models.Sub.days, String) + ' day', INTERVAL)
-                        )
+                                func.cast(func.cast(models.Sub.days, String) + ' minutes', INTERVAL)
+                        ) #TODO: изменить minutes -> days
                     )
                     .returning(models.User.payment_method_id, models.Sub.price,
-                               models.User.current_sub_id)
+                               models.User.current_sub_id, models.User.sub_end)
                 )
                 print(f'{result=}')
                 if not result: return
                 result = result.fetchone()
                 print(f'{result=}')
                 if not result: return
-                payment_method_id, price, current_sub_id = result
+                payment_method_id, price, current_sub_id, sub_end = result
                 print(f'{payment_method_id=}')
                 print(f'{price=}')
                 print(f'{current_sub_id=}')
@@ -77,6 +77,9 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                         amount=price, sub_id=current_sub_id,
                         order_id=payment_id,
                         test=True
+                    )
+                    self.add_job_to_user(
+                        user_id, sub_end=sub_end
                     )
                     await session.commit()
         except Exception as e:

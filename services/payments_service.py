@@ -58,7 +58,7 @@ class PaymentsService(PaymentsServiceProtocol):
             .values(
                 user_id=user_tid, amount=amount,
                 test=test, order_id=order_id,
-                sub_id=sub_id
+                sub_id=sub_id, is_auto_paid=True
             )
         )
 
@@ -76,8 +76,8 @@ class PaymentsService(PaymentsServiceProtocol):
             .values(
                 user_id=user_tid, amount=amount,
                 order_id=order_id,
-                sub_id=sub_id, paid_at=func.now(),
-                is_auto_paid=True, test=test
+                sub_id=sub_id,
+                test=test
             )
         )
 

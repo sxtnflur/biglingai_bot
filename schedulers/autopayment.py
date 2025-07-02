@@ -30,28 +30,49 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
     async def do_pay(self, user_id: int):
         try:
             async with async_session() as session:
-                result = await session.execute(
-                    update(models.User)
+                # result = await session.execute(
+                #     update(models.User)
+                #     .filter(models.User.id == user_id,
+                #             models.User.payment_method_id.isnot(None),
+                #             models.User.is_autopayment.is_(True),
+                #             models.User.current_sub_id.isnot(None),
+                #             models.Sub.id == models.User.current_sub_id
+                #     )
+                #     .values(
+                #         sub_end=(
+                #             func.now() + func.cast(func.cast(models.Sub.days, String) + ' minutes', INTERVAL)
+                #         )  # TODO: изменить minutes -> days
+                #     )
+                #     .returning(models.User.payment_method_id, models.Sub.price,
+                #                models.User.current_sub_id, models.User.sub_end)
+                # )
+                user: models.User | None = await session.scalar(
+                    select(models.User)
+                    .options(load_only(
+                        models.User.payment_method_id,
+                        models.User.sub_end,
+                        models.User.current_sub_id
+                    ))
+                    .join(models.User.current_sub)
                     .filter(models.User.id == user_id,
                             models.User.payment_method_id.isnot(None),
                             models.User.is_autopayment.is_(True),
-                            models.User.current_sub_id.isnot(None),
-                            models.Sub.id == models.User.current_sub_id
+                            models.User.current_sub_id.isnot(None)
                     )
-                    .values(
-                        sub_end=(
-                            func.now() + func.cast(func.cast(models.Sub.days, String) + ' minutes', INTERVAL)
-                        )  # TODO: изменить minutes -> days
-                    )
-                    .returning(models.User.payment_method_id, models.Sub.price,
-                               models.User.current_sub_id, models.User.sub_end)
                 )
-                print(f'{result=}')
-                if not result: return
-                result = result.fetchone()
-                print(f'{result=}')
-                if not result: return
-                payment_method_id, price, current_sub_id, sub_end = result
+                # print(f'{result=}')
+                # if not result: return
+                # result = result.fetchone()
+                # print(f'{result=}')
+                # if not result: return
+                payment_method_id = None
+                if user:
+                    payment_method_id, price, current_sub_id, sub_end = (
+                        user.payment_method_id,
+                        user.current_sub.price,
+                        user.current_sub_id,
+                        user.sub_end
+                    )
                 print(f'{payment_method_id=}')
                 print(f'{price=}')
                 print(f'{current_sub_id=}')

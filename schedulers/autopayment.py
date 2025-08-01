@@ -8,7 +8,7 @@ from services.payments_service import PaymentsServiceProtocol
 from sqlalchemy.dialects.postgresql import INTERVAL
 from .abc import AutopaymentSchedulerProtocol
 from sqlalchemy import select, update, func, Interval, String
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import load_only, selectinload
 from apscheduler.triggers.cron import CronTrigger
 
 
@@ -52,58 +52,61 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                         models.User.payment_method_id,
                         models.User.sub_end,
                         models.User.current_sub_id
-                    ))
-                    .join(models.User.current_sub)
+                    ),
+                        selectinload(models.User.current_sub)
+                    )
                     .filter(models.User.id == user_id,
                             models.User.payment_method_id.isnot(None),
                             models.User.is_autopayment.is_(True),
                             models.User.current_sub_id.isnot(None)
                     )
                 )
-                # print(f'{result=}')
-                # if not result: return
-                # result = result.fetchone()
-                # print(f'{result=}')
-                # if not result: return
-                payment_method_id = None
-                print(f'{user=}')
-                if user:
-                    payment_method_id, price, current_sub_id, sub_end = (
-                        user.payment_method_id,
-                        user.current_sub.price,
-                        user.current_sub_id,
-                        user.sub_end
-                    )
-                print(f'{payment_method_id=}')
-                print(f'{price=}')
-                print(f'{current_sub_id=}')
 
-                if not payment_method_id:
+                print(f'{user=}')
+
+                if not user:
                     self.remove_user_job(user_id)
-                    await session.rollback()
-                    await self.logger.log_by_telegram_bot(
-                        f'Автооплата для пользователя {user_id} не прошла и дальнейшие автооплаты отменены, '
-                        f'так как у пользователя нет payment_method_id/is_autopayment/autopayment_duration'
-                    )
-                else:
-                    payment_id: str = await self.payment_factory.create_auto_payment(
-                        amount=price,
-                        payment_method='yookassa',
-                        payment_method_id=payment_method_id,
-                        description='Автооплата'
-                    )
-                    print(f'{payment_id=}')
+                    await self.logger.log_by_telegram_bot(f'Автооплата отменена для {user_id}, так как user не найден (NULL)')
+                    return
+
+                # 2. Явно загружаем подписку, если не загружена
+                if not user.current_sub or user.current_sub not in session:
+                    raise Exception('Нет подписки')
+
+                # 3. Создаем платеж ВНЕ контекста сессии
+                payment_data = {
+                    'amount': user.current_sub.price,
+                    'payment_method': 'yookassa',
+                    'payment_method_id': user.payment_method_id,
+                    'description': 'Автооплата'
+                }
+                print(f'{payment_data=}')
+                # if not payment_method_id:
+                #     self.remove_user_job(user_id)
+                #     await session.rollback()
+                #     await self.logger.log_by_telegram_bot(
+                #         f'Автооплата для пользователя {user_id} не прошла и дальнейшие автооплаты отменены, '
+                #         f'так как у пользователя нет payment_method_id/is_autopayment/autopayment_duration'
+                #     )
+                # else:
+                await session.commit()
+
+                payment_id: str = await self.payment_factory.create_auto_payment(**payment_data)
+                print(f'{payment_id=}')
+
+                async with session.begin():
                     await self.payments_service.save_autopayment(
                         db=session, user_tid=user_id,
-                        amount=price, sub_id=current_sub_id,
+                        amount=payment_data['amount'], sub_id=user.current_sub_id,
                         order_id=payment_id,
                         test=True
                     )
                     self.add_job_to_user(
-                        user_id, sub_end=sub_end
+                        user_id, sub_end=user.sub_end
                     )
                     await session.commit()
         except Exception as e:
+            # raise e
             await self.logger.log_by_telegram_bot(
                 f'Автооплата для пользователя {user_id} не прошла из-за ошибки: {e}'
             )
@@ -145,12 +148,16 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                 .filter(
                     models.User.payment_method_id.isnot(None),
                     models.User.is_autopayment.is_(True),
-                    models.User.current_sub_id.isnot(None)
+                    models.User.current_sub_id.isnot(None),
+                    models.User.sub_end.isnot(None)
                 )
             )
 
         for user in users:
-            self.add_job_to_user(user_id=user.id,
-                                 sub_end=user.sub_end)  # sub_end=user.sub_end)
+            if user.sub_end > datetime.utcnow():
+                self.add_job_to_user(user_id=user.id,
+                                     sub_end=user.sub_end)  # sub_end=user.sub_end)
+            else:
+                await self.do_pay(user_id=user.id)
 
         await self.logger.log_by_telegram_bot('Задачи на автооплаты установлены')

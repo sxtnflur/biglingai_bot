@@ -109,7 +109,7 @@ class RefService:
             sub = await self.subs_service.get_sub(sub_id, db=db)
             increase_days = sub.days // 2
             sub_end = await self.subs_service.create_or_increase_sub_by_days(
-                days=increase_days, user_id=user_tid, db=db
+                sub_id=sub_id, days=increase_days, user_id=user_tid, db=db
             )
             await bot.send_message(
                 refferer.id,

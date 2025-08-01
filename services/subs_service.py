@@ -15,7 +15,7 @@ class SubsServiceProtocol(Protocol):
     async def get_sub(self, id: int, db: AsyncSession) -> Sub: ...
 
     async def create_or_increase_sub_by_days(
-            self, days: int, user_id: int, db: AsyncSession
+            self, sub_id: int, days: int, user_id: int, db: AsyncSession
     ) -> datetime: ...
 
     async def create_or_increase_sub(
@@ -71,7 +71,7 @@ class SubsService(SubsServiceProtocol):
             return res[0]
 
     async def create_or_increase_sub_by_days(
-        self, days: int, user_id: int, db: AsyncSession
+        self, sub_id: int, days: int, user_id: int, db: AsyncSession
     ) -> datetime:
         # TODO: изменить minutes -> days
         td = timedelta(minutes=days)
@@ -83,8 +83,9 @@ class SubsService(SubsServiceProtocol):
                     models.User.sub_end.isnot(None),
                     models.User.sub_end >= func.now()
                 ), models.User.sub_end + td),
-                else_=func.now() + td
-            ))
+                else_=func.date_trunc('minute', func.now()) + td
+            ),
+                current_sub_id=sub_id)
             .returning(models.User.sub_end)
         )
 

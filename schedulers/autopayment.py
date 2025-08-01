@@ -66,6 +66,7 @@ class AutopaymentScheduler(AutopaymentSchedulerProtocol):
                 # print(f'{result=}')
                 # if not result: return
                 payment_method_id = None
+                print(f'{user=}')
                 if user:
                     payment_method_id, price, current_sub_id, sub_end = (
                         user.payment_method_id,

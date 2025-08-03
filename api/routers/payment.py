@@ -61,16 +61,16 @@ async def process_pay(
             db=db
         )
         scheduler.autopayment_scheduler.add_job_to_user(payment.user.id, sub_end=payment.user.sub_end)
-        text += 'Следующая дата автосписания {}-  <code>{}</code> по часовому поясу UTC+00:00\n\n'.format(
+        text += 'Следующая дата автосписания {}через <code>{}</code>\n\n'.format(
             f'<i>{payment_method_title}</i> ' if payment_method_title else '',
-            text_sub_end
+            td_to_text(payment.user.td_before_sub_end)
         )
 
     elif payment.user.is_autopayment and payment.user.payment_method_id:
         scheduler.autopayment_scheduler.add_job_to_user(payment.user.id, sub_end=payment.user.sub_end)
-        text += 'Следующая дата автосписания {}-  <code>{}</code> по часовому поясу UTC+00:00\n\n'.format(
+        text += 'Следующая дата автосписания {}через <code>{}</code>\n\n'.format(
             f'<i>{payment_method_title}</i> ' if payment_method_title else '',
-            text_sub_end
+            td_to_text(payment.user.td_before_sub_end)
         )
     else:
         text += 'Ваша подписка окончится через <code>{}</code>\n\n'.format(td_to_text(payment.user.td_before_sub_end))

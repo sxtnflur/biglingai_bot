@@ -74,7 +74,7 @@ class SubsService(SubsServiceProtocol):
         self, sub_id: int, days: int, user_id: int, db: AsyncSession
     ) -> datetime:
         # TODO: изменить minutes -> days
-        td = timedelta(minutes=days)
+        td = timedelta(days=days)
         return await db.scalar(
             update(models.User)
             .filter(models.User.id == user_id)

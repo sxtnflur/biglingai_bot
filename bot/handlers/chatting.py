@@ -1,7 +1,7 @@
 import os
 import random
 
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
@@ -40,6 +40,17 @@ CHAT_TYPE = f'text-chatting'
 def get_reaction(count_mistakes: int) -> ReactionTypeUnion | None:
     if not count_mistakes:
         return utils.get_reaction_by_level(is_positive=True)
+
+
+async def send_typing_process(chat_id: int, bot: Bot, type: ChattingMessageType):
+    if type == ChattingMessageType.text:
+        await bot.send_chat_action(
+            chat_id, 'typing'
+        )
+    else:
+        await bot.send_chat_action(
+            chat_id, 'record_voice'
+        )
 
 
 async def send_ai_message(
@@ -186,6 +197,9 @@ async def chatting_mode_start(
         )
     )
     voice_over = False if chatting_message_type == ChattingMessageType.text else True
+
+    await send_typing_process(call.from_user.id, call.bot, chatting_message_type)
+
     answer = await langlearning_openai_service.send_text_talking(
         'Hello!', theme=theme, dialog_type=dialog_type, voice_over=voice_over
     )
@@ -248,6 +262,9 @@ async def chatting(
         return
 
     voice_over = False if chatting_message_type == ChattingMessageType.text else True
+
+    await send_typing_process(message.from_user.id, message.bot, chatting_message_type)
+
     if message.voice:
         path_to_audio = await save_voice_as_mp3(message.voice)
         answer = await langlearning_openai_service.send_audio_talking(

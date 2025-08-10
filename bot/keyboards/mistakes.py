@@ -60,6 +60,8 @@ class MistakesKeyboards:
         dialog_uuid: UUID, has_mistakes: bool
     ) -> InlineKeyboardMarkup:
         if has_mistakes:
+            if isinstance(dialog_uuid, UUID):
+                dialog_uuid = dialog_uuid.__str__()
             return InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(
                     text=MistakesTexts.WORK_OUT_MISTAKE_BUTTON,
@@ -67,7 +69,7 @@ class MistakesKeyboards:
                 )],
                 [InlineKeyboardButton(
                     text=MistakesTexts.START_NEW_DIALOG,
-                    callback_data='chatting_mode_start'
+                    callback_data='choose_mode:chatting'
                 )],
                 [InlineKeyboardButton(
                     text=BaseTexts.MAIN_MENU_BUTTON, callback_data='start'
@@ -77,7 +79,7 @@ class MistakesKeyboards:
             return InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(
                     text=MistakesTexts.START_NEW_DIALOG,
-                    callback_data='chatting_mode_start'
+                    callback_data='choose_mode:chatting'
                 )],
                 [InlineKeyboardButton(
                     text=BaseTexts.MAIN_MENU_BUTTON, callback_data='start'

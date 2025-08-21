@@ -10,7 +10,10 @@ from config import settings
 from bot.handlers import __routers__
 from api.routers import __routers__ as api_routers
 from depends import scheduler
+import logging
 
+
+logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
 dp = Dispatcher()

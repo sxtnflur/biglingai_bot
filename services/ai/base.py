@@ -1,6 +1,5 @@
 import json
-import random
-from enum import Enum, auto
+import logging
 
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
@@ -142,7 +141,11 @@ In "end_talking" set true if the dialog should be completed.
 
         correct = user_text
         if messages:
-            correction, correct = await self.find_mistakes(user_text=user_text, messages=messages)
+            try:
+                correction, correct = await self.find_mistakes(user_text=user_text, messages=messages)
+            except Exception as e:
+                correction = None
+                logging.error(f'Не удалось получить ошибки в тексте: {user_text}. Ошибка: {e}')
         else:
             correction = None
 

@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from aiogram import Router, F
@@ -201,11 +202,7 @@ async def train_mistake_answer(
 
     await call.message.answer(text)
 
-    try:
-        await UsersService(db).update_user_credits(
-            user_tid=call.from_user.id, credits=1, action='down'
-        )
-    except CreditsOverException:
+    if not await UsersService(db).do_paid_action(user_tid=call.from_user.id):
         await call.message.edit_text(
             BaseTexts.CREDITS_OVER,
             reply_markup=CreditsKeyboards.go_to_credits_shop()

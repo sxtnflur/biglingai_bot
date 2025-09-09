@@ -12,11 +12,10 @@ from api.routers import __routers__ as api_routers
 from depends import scheduler
 import logging
 
+from loader import dp, bot
 
 logging.basicConfig(level=logging.INFO)
 
-bot = Bot(token=settings.BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
-dp = Dispatcher()
 dp.include_routers(*__routers__)
 
 

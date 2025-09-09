@@ -17,10 +17,9 @@ from database.init_db import async_session, get_db
 router = APIRouter()
 
 
-class PaymentMethod(BaseModel):
-    id: str
-    saved: bool
-    title: str
+# class PaymentMethod(BaseModel):
+#     id: str
+#     saved: bool
 
 
 class PaymentAmount(BaseModel):
@@ -32,7 +31,7 @@ class WebhookObject(BaseModel):
     id: str
     status: str
     metadata: dict = {}
-    payment_method: PaymentMethod | None = None
+    payment_method: dict | None = None
     amount: PaymentAmount
 
 
@@ -94,6 +93,7 @@ async def process_pay(
             reply_markup=BaseKeyboards.main_menu(),
             parse_mode='HTML'
         )
+    await UsersService(db).update_user(user_tid=payment.user.id, sale_percent=None)
     await db.commit()
     await logger_service.log_by_telegram_bot(
         f'Пользователь: {payment.user.full_name} @{payment.user.username} {payment.user.id}\n'
@@ -116,11 +116,18 @@ async def yookassa_webhook(
 
         print(f'{payload.object=}')
 
-        await process_pay(
-            payload.object.id, db,
-            save_payment_method_id=payload.object.payment_method.id if payload.object.payment_method.saved else None,
-            payment_method_title=payload.object.payment_method.title if payload.object.payment_method.saved else None
-        )
+        if payload.object.payment_method and payload.object.payment_method.get('saved'):
+            await process_pay(
+                payload.object.id, db,
+                save_payment_method_id=payload.object.payment_method.get('id'),
+                payment_method_title=payload.object.payment_method.get('title')
+            )
+        else:
+            await process_pay(
+                payload.object.id, db,
+                save_payment_method_id=payload.object.payment_method.get('id'),
+                payment_method_title=payload.object.payment_method.get('title')
+            )
         return {
             'status': 'ok'
         }

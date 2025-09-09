@@ -45,6 +45,13 @@ async def subs(
 ):
     subs = await subs_service.get_subs(db=db)
     user = await UsersService(db).get_user_with_sub(call.from_user.id)
+
+    if user.sale_percent:
+        for sub in subs:
+            if sub.days == 30:
+                sub.sale = sub.price
+                sub.price = round(sub.price - (sub.price * (user.sale_percent / 100)))
+
     await call.message.edit_text(
         SubsTexts.subs(
             subs,
@@ -83,6 +90,11 @@ async def buy_sub(
     call: CallbackQuery, callback_data: BuySubCallback, db: AsyncSession
 ):
     sub = await subs_service.get_sub(callback_data.id, db=db)
+    if sub.days == 30:
+        user = await UsersService(db).get_user(call.from_user.id)
+        if user.sale_percent:
+            sub.price = round(sub.price - (sub.price * (user.sale_percent / 100)))
+
     pay_data = await payment_factory.create_payment(
         payment_method='yookassa',
         amount=sub.price,

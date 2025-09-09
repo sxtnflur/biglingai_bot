@@ -12,4 +12,5 @@ class UserRefInfo(BaseModel):
 
 
 class DecodedRefInfo(BaseModel):
-    invited_by_id: int
+    invited_by_id: int | None = None
+    sale_percent: int | None = None

@@ -44,6 +44,8 @@ class BaseTexts:
     REF_BUTTON = '💰 Реф. программа'
     MAIN_MENU_BUTTON = '▶ В главное меню'
 
+    SUBS_BUTTON2 = 'К подпискам'
+
     @staticmethod
     def start(*args, **kwargs):
         return BaseTexts.START

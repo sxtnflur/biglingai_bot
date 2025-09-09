@@ -7,6 +7,7 @@ from bot.middlewares import DatabaseMiddleware
 from bot.texts.base import BaseTexts
 from config import settings
 from depends import subs_service, ref_service
+from schemas.ref import DecodedRefInfo
 from services.ref_service import RefService
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +24,7 @@ async def start_ref(
     state: FSMContext,
     db: AsyncSession
 ):
-    invited_by_id = None
+    ref_info = DecodedRefInfo()
     if not await UsersService(db).check_if_user_exists(message.from_user.id):
         ref_info = await ref_service.process_ref_payload(
             command.args,
@@ -31,10 +32,10 @@ async def start_ref(
             db=db
         )
         print(f'{ref_info=}')
-        invited_by_id = ref_info.invited_by_id if ref_info else None
 
     user = await UsersService(db).add_user_from_tguser(
-        message.from_user, invited_by_id=invited_by_id,
+        message.from_user, invited_by_id=ref_info.invited_by_id,
+        sale_percent=ref_info.sale_percent,
         start_credits=(settings.START_CREDITS or 0)
     )
     await state.clear()

@@ -2,9 +2,12 @@ import re
 
 from aiogram import Bot
 from aiogram.utils.deep_linking import create_start_link
+from bot import keyboards
+from bot.keyboards.base import BaseKeyboards
 from bot.keyboards.ref import RefKeyboards
 from bot.texts.ref import RefTexts
 from database import models
+from database.repositories import InviteLinksRepo
 from schemas.ref import UserRefInfo, DecodedRefInfo
 from sqlalchemy import select, func, exists, update, case
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,8 +18,9 @@ from .subs_service import SubsService, SubsServiceProtocol
 from .users_service import UsersService
 
 class RefService:
-    def __init__(self, subs_service: SubsServiceProtocol):
+    def __init__(self, subs_service: SubsServiceProtocol, bot: Bot):
         self.subs_service = subs_service
+        self.bot = bot
 
     async def create_ref_link(self, user_tid: int, bot: Bot):
         return await create_start_link(
@@ -26,12 +30,15 @@ class RefService:
     async def process_ref_payload(self, payload: str, user_id: int, db: AsyncSession) -> DecodedRefInfo | None:
         try:
             ref_user_id = None
+            promo_key = None
             if payload.startswith('ref'):
                 ref_user_id = payload.split('ref')[-1]
+            elif payload.startswith('promo'):
+                promo_key = payload.split('promo')[-1]
 
             print(f'{ref_user_id=}')
-            if ref_user_id and len(ref_user_id) == 1:
-                ref_user_id = int(ref_user_id[0])
+            if ref_user_id:
+                ref_user_id = int(ref_user_id)
 
                 if ref_user_id == user_id:
                     return
@@ -39,8 +46,20 @@ class RefService:
                 if not await UsersService(db).check_if_user_exists(ref_user_id):
                     return
                 return DecodedRefInfo(invited_by_id=ref_user_id)
+            elif promo_key:
+                invite_promo_link = await InviteLinksRepo(db).get_one(key=promo_key)
+                await self.bot.send_message(
+                    chat_id=user_id,
+                    text='💫 За переход от <b>{}</b> вы получаете скидку {}% на первую оплату подписки на 1 месяц!'
+                    .format(invite_promo_link.name, invite_promo_link.sale_percent),
+                    reply_markup=BaseKeyboards.to_subs()
+                )
+                return DecodedRefInfo(
+                    sale_percent=invite_promo_link.sale_percent
+                )
         except:
-            return
+            pass
+        return DecodedRefInfo()
 
     async def on_user_paid(self, db: AsyncSession, user_tid: int, amount: int, sub_id: int, bot: Bot) -> None:
         has_payments = await db.scalar(

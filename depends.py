@@ -1,3 +1,4 @@
+from loader import bot
 from openai import AsyncOpenAI
 from schedulers import SchedulerService
 from services import (
@@ -77,7 +78,7 @@ subs_service = get_subs_service()
 
 
 def get_ref_service():
-    return RefService(subs_service=get_subs_service())
+    return RefService(subs_service=get_subs_service(), bot=bot)
 
 
 ref_service = get_ref_service()

@@ -29,6 +29,8 @@ class User(Base):
 
     special_ref_on_moderation: Mapped[bool] = mapped_column(server_default='False')
 
+    sale_percent: Mapped[int | None]
+
     created_at: Mapped[CreatedAt]
     updated_at: Mapped[UpdatedAt]
 

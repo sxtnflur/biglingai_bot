@@ -83,3 +83,11 @@ class BaseKeyboards:
         return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
             text=BaseTexts.MAIN_MENU_BUTTON, callback_data='start'
         )]])
+
+    @staticmethod
+    def to_subs():
+        return InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text=BaseTexts.SUBS_BUTTON2, callback_data='subs'
+            )]
+        ])

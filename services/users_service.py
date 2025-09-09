@@ -20,11 +20,12 @@ class UsersService:
         self, user_tid: int, username: str | None, first_name: str,
         last_name: str | None,
         invited_by_id: int | None = None,
+        sale_percent: int | None = None,
         start_credits: int = settings.START_CREDITS
     ) -> UserSchema | None:
         stmt = text('''
-INSERT INTO users (id, username, first_name, last_name, credits, invited_by_id)
-VALUES (:user_id, :username, :first_name, :last_name, :start_credits, :invited_by_id)
+INSERT INTO users (id, username, first_name, last_name, credits, invited_by_id, sale_percent)
+VALUES (:user_id, :username, :first_name, :last_name, :start_credits, :invited_by_id, :sale_percent)
 ON CONFLICT (id) DO UPDATE SET
 username = EXCLUDED.username,
 first_name = EXCLUDED.first_name,
@@ -35,7 +36,8 @@ RETURNING credits, sub_end
             user_id=user_tid, username=username,
             first_name=first_name, last_name=last_name,
             start_credits=start_credits,
-            invited_by_id=invited_by_id
+            invited_by_id=invited_by_id,
+            sale_percent=sale_percent
         )
         res = await self.__db.execute(stmt)
         if not res:
@@ -50,11 +52,13 @@ RETURNING credits, sub_end
         )
 
     async def add_user_from_tguser(self, user: TgUser, invited_by_id: int | None = None,
+                                   sale_percent: int | None = None,
                                    start_credits: int = settings.START_CREDITS) -> UserSchema:
         res = await self.add_user(
             user_tid=user.id, username=user.username,
             first_name=user.first_name, last_name=user.last_name,
-            invited_by_id=invited_by_id, start_credits=start_credits
+            invited_by_id=invited_by_id, start_credits=start_credits,
+            sale_percent=sale_percent
         )
         return res
 
@@ -162,4 +166,16 @@ RETURNING credits, sub_end
     async def update_user(self, user_tid: int, **updates) -> None:
         await self.__db.execute(
             update(User).filter(User.id == user_tid).values(**updates)
+        )
+
+    async def set_sale(self, user_tid: int, sale_percent: int) -> None:
+        await self.__db.execute(
+            update(User)
+            .filter(User.id == user_tid)
+            .values(
+                sale_percent=case(
+                    (User.sale_percent >= sale_percent, User.sale_percent),
+                    else_=sale_percent
+                )
+            )
         )

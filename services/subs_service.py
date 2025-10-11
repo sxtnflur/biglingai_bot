@@ -53,10 +53,11 @@ class SubsService(SubsServiceProtocol):
         return list(map(Sub.model_validate, subs))
 
     async def get_sub(self, id: int, db: AsyncSession) -> Sub | None:
-        return await db.scalar(
+        sub = await db.scalar(
             select(models.Sub)
             .filter(models.Sub.id == id)
         )
+        return Sub.model_validate(sub)
 
     # def get_subs_by_filters(self, **filters) -> list[Sub]:
     #     def f(x: Sub):

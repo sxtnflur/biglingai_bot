@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     BOT_TOKEN: str
     BOT_WEBHOOK_URL: str
     BOT_WEBHOOK_ENDPOINT: str
+    API_PREFIX: str = '/bigling'
 
     START_CREDITS: int = 30
     ADMIN_ID: int = 1304563494

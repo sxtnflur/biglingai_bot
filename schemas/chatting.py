@@ -157,7 +157,7 @@ class AnswerTalkingResult(BaseModel):
 class TalkingResponse(BaseModel):
     result: AnswerTalkingResult | None = None
     is_right_lang: bool
-    end_talking: bool
+    end_talking: bool = False
 
 
 class MistakeGroup(StrEnum):

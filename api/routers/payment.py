@@ -50,7 +50,6 @@ async def process_pay(
         db=db, bot=bot, order_id=order_id
     )
 
-    text_sub_end = payment.user.sub_end.strftime('%H:%M %d.%m.%Y')
     text = ''
     if save_payment_method_id:
         await subs_service.add_autopayment_to_user(

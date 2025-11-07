@@ -62,15 +62,16 @@ class ChattingTexts:
                     f"❌ <s>{mistake.incorrect}</s> ➡ <b>{mistake.correct}</b>\n"
                     f"<blockquote expandable>ℹ {mistake.explanation}</blockquote>\n"
                     f"📌 <b>Например:</b> " +
-            ''.join(list(map(
-                lambda x: '<blockquote>{}</blockquote>'.format(x),
-                mistake.example
-            )))
+                    ' | '.join(list(map(
+                        lambda x: '<blockquote>{}</blockquote>'.format(x),
+                        mistake.example
+                    )))
             )
+
         text = '<b>Исправленный текст:</b> {}\n\n'.format(correction.correct)
         text += ('<b>Замечания:</b>\n{}\n\n'.format(
-                    '\n\n'.join(list(map(prepare_mistake, correction.mistakes)))
-                ))
+            '\n\n'.join(list(map(prepare_mistake, correction.mistakes)))
+        ))
         return text.strip()
 
     @staticmethod
@@ -84,9 +85,9 @@ class ChattingTexts:
     def result_dialog(count_messages: int, mistakes: list[MistakeSchema] | None = None) -> str:
         def prepare_mistake(mistake: MistakeSchema):
             return (
-                    f"{mistake.type.name}: <i>{mistake.incorrect}</i> ➡ <i>{mistake.correct}</i>\n"
-                    # f"ℹ {mistake.explanation}\n"
-                    # f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
+                f"{mistake.type.name}: <i>{mistake.incorrect}</i> ➡ <i>{mistake.correct}</i>\n"
+                # f"ℹ {mistake.explanation}\n"
+                # f"📌 Пример: " + ' | '.join(list(map(lambda x: '<code>{}</code>'.format(x), mistake.example)))
             )
             # return f'<b>{mistake.subgroup.subgroup_label.title()} ({mistake.subgroup.group.label}):</b> {mistake.comment}'
 

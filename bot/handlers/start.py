@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.filters import CommandStart, CommandObject
+from aiogram.filters import CommandStart, CommandObject, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from bot.keyboards.base import BaseKeyboards
@@ -62,3 +62,10 @@ async def start_call(
     await call.message.delete_reply_markup()
     await call.message.answer(BaseTexts.start(),
                               reply_markup=BaseKeyboards.main_menu())
+
+
+@router.message(Command('support'))
+async def support(m: Message):
+    await m.answer(
+        'Если возникнут проблемы, обращайтесь сюда:\n@teledeff_support'
+    )

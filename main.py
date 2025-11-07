@@ -25,6 +25,9 @@ async def onstartup(bot: Bot):
         commands=[
             BotCommand(
                 command='start', description='Перезапустить бота'
+            ),
+            BotCommand(
+                command='support', description='Поддержка'
             )
         ]
     )

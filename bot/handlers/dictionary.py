@@ -1,3 +1,4 @@
+import datetime
 import random
 
 from aiogram import Router, F
@@ -10,27 +11,17 @@ from bot.keyboards.base import BaseKeyboards
 from bot.middlewares import DatabaseMiddleware
 from bot.texts.base import BaseTexts
 from bot.texts.dictionary import DictionaryTexts
-from depends import dictionary_service, translator
+from depends import dictionary_service, translator, scheduler
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
-from bot.callbacks.dictionary import AddWordToDictCallback, MarkDictWordAsWorkedCallback, DictWordsListCallback
+from bot.callbacks.dictionary import AddWordToDictCallback, MarkDictWordAsWorkedCallback, DictWordsListCallback, \
+    TrainDictCallback, SelectWordTranslationCallback
 
 router = Router()
 
 
 class DictionaryStates(StatesGroup):
     get_train_translate_word = State()
-
-
-
-@router.callback_query(F.data == 'dictionary')
-async def start_dictionary(
-        call: CallbackQuery
-):
-    await call.message.edit_text(
-        DictionaryTexts.MAIN,
-        reply_markup=DictionaryKeyboards.main()
-    )
 
 
 @router.callback_query(F.data == 'how-to-add-word-to-dict')
@@ -47,6 +38,30 @@ router_ = Router()
 router.include_router(router_)
 router_.message.middleware(DatabaseMiddleware())
 router_.callback_query.middleware(DatabaseMiddleware())
+
+
+@router_.callback_query(F.data == 'dictionary')
+async def start_dictionary(
+        call: CallbackQuery, db: AsyncSession
+):
+    count_total_worked_words = await dictionary_service.count_user_dict_words(
+        user_id=call.from_user.id, db=db,
+        can_be_mark_as_worked=True
+    )
+    count_already_know_words = await dictionary_service.count_user_dict_words(
+        user_id=call.from_user.id, db=db,
+        can_be_mark_as_worked=True, already_know=True
+    )
+    count_worked_in_bot_words = await dictionary_service.count_user_dict_words(
+        user_id=call.from_user.id, db=db,
+        can_be_mark_as_worked=True, already_know=False
+    )
+    await call.message.edit_text(
+        DictionaryTexts.main(
+            count_total_worked_words, count_worked_in_bot_words, count_already_know_words
+        ),
+        reply_markup=DictionaryKeyboards.main()
+    )
 
 
 @router_.callback_query(AddWordToDictCallback.filter())
@@ -70,68 +85,77 @@ async def add_word_to_dict(
     )
 
 
-@router_.callback_query(F.data == 'train-my-dict')
-async def dict_train(
-        call: CallbackQuery, db: AsyncSession,
-        state: FSMContext
-):
-    await state.clear()
-    last_word = call.message.html_text[
-                call.message.html_text.find('<blockquote>') + len('<blockquote>'):
-                call.message.html_text.find('</blockquote>')
-                ]
-    count_available_words = await dictionary_service.count_user_dict_words(
-        user_id=call.from_user.id, db=db,
-        only_cant_be_worked=True, only_not_worked=True
+async def get_message_train_word(user_id: int, state: FSMContext, db: AsyncSession, last_word: str):
+    word, learning_rate = await dictionary_service.get_randow_word_to_train(
+        user_id=user_id, db=db, last_word=last_word
     )
-
-    # Если слов меньше 10, берем слово из чужого словаря с элементом рандома 50/50
-    if count_available_words < 10 and random.randint(0, 1):
-        user_level = await dictionary_service.count_user_level(
-            user_id=call.from_user.id, db=db
-        )
-        word = await dictionary_service.get_random_word_from_dictionary(
-            db=db,
-            user_id=call.from_user.id,
-            user_level=user_level,
-            exclude_words=[last_word]
-        )
-        await dictionary_service.join_dictionary_word_to_user(
-            word_id=word.id, user_id=call.from_user.id, db=db
-        )
-        learning_rate = 0
-    else:
-        word_data = await dictionary_service.get_random_user_word_from_dictionary(
-            user_id=call.from_user.id, db=db, exclude_words=[last_word]
-        )
-        word = word_data.word
-        learning_rate = word_data.user_info.learning_rate
+    print(f'{word=} {learning_rate=}')
 
     if word.word == last_word:
-        return await dict_train(call, db)
-
-    await call.message.delete_reply_markup()
+        return await get_message_train_word(user_id, state, db, last_word)
 
     if learning_rate == 0:
         await dictionary_service.change_word_learning_rate(
-            db=db, word_id=word.id, user_id=call.from_user.id,
+            db=db, word_id=word.id, user_id=user_id,
             change_for_amount=1, increase=True
         )
-        await call.message.answer(
+        return dict(
             text=DictionaryTexts.word_remember_card(word),
             reply_markup=DictionaryKeyboards.train_card()
         )
-    else:
-        await call.message.answer(
-            text=DictionaryTexts.word_remember_task(word=word.word),
-            reply_markup=DictionaryKeyboards.exit()
+    elif learning_rate < 4:
+        en_words = random.randint(0, 1)
+        wrong_words = await dictionary_service.get_wrong_words(
+            user_id=user_id, exclude_word_id=word.id, db=db, get_en_words=en_words
         )
+        await state.update_data(
+            dict_train_translate_words=[word.word],
+            dict_train_last_word=word.word,
+            dict_train_last_word_id=word.id
+        )
+        orig_word = word.word if not en_words else random.choice(word.ru_words)
+        return dict(
+            text=DictionaryTexts.select_right_translation(orig_word),
+            reply_markup=DictionaryKeyboards.select_right_translation(
+                right_word=word.word if en_words else random.choice(word.ru_words),
+                wrong_words=wrong_words
+            )
+        )
+    else:
         await state.update_data(
             dict_train_translate_words=list(map(lambda x: x.lower(), word.ru_words)),
             dict_train_last_word=word.word,
             dict_train_last_word_id=word.id
         )
         await state.set_state(DictionaryStates.get_train_translate_word)
+        return dict(
+            text=DictionaryTexts.word_remember_task(word=word.word),
+            reply_markup=DictionaryKeyboards.exit()
+        )
+
+
+@router_.callback_query(TrainDictCallback.filter())
+async def dict_train(
+        call: CallbackQuery, db: AsyncSession,
+        state: FSMContext, callback_data: TrainDictCallback
+):
+    await state.clear()
+    last_word = call.message.html_text[
+                call.message.html_text.find('<blockquote>') + len('<blockquote>'):
+                call.message.html_text.find('</blockquote>')
+                ]
+
+    if callback_data.already_know:
+        await dictionary_service.mark_word_as_already_know(
+            word=last_word, user_id=call.from_user.id, db=db
+        )
+
+    await call.message.delete()
+    await call.message.answer(
+        **await get_message_train_word(
+            user_id=call.from_user.id, state=state, db=db, last_word=last_word
+        )
+    )
 
 
 @router_.message(DictionaryStates.get_train_translate_word)
@@ -148,13 +172,20 @@ async def train_get_translate_word(
     is_right = m.text.strip().lower() in dict_train_translate_words
 
     if is_right:
-        await m.answer(
+        answer_msg = await m.answer(
             text=DictionaryTexts.train_word_success(ru_words=dict_train_translate_words)
         )
     else:
-        await m.answer(
+        answer_msg = await m.answer(
             text=DictionaryTexts.train_word_wrong(ru_words=dict_train_translate_words)
         )
+
+    scheduler.scheduler.add_job(
+        func=m.bot.delete_messages,
+        kwargs=dict(chat_id=m.chat.id, message_ids=[answer_msg.message_id, m.message_id, m.message_id - 1]),
+        trigger='date',
+        run_date=datetime.datetime.now() + datetime.timedelta(seconds=3)
+    )
 
     # Изменяем рейтинг изучения юзера на этом слове
     updated_learning_rate = await dictionary_service.change_word_learning_rate(
@@ -172,44 +203,62 @@ async def train_get_translate_word(
             reply_markup=DictionaryKeyboards.word_can_be_marked_as_worked(word_id=dict_train_last_word_id)
         )
 
-    word_data = await dictionary_service.get_random_user_word_from_dictionary(
-        user_id=m.from_user.id, db=db, exclude_words=[last_word]
+    await m.answer(
+        **await get_message_train_word(
+            user_id=m.from_user.id, db=db, state=state, last_word=last_word
+        )
     )
-    if not word_data:
-        word = await dictionary_service.get_random_word_from_dictionary(
-            db=db, user_id=m.from_user.id, user_level=1,
-            exclude_words=[last_word]
-        )
-        await dictionary_service.join_dictionary_word_to_user(
-            word_id=word.id, user_id=m.from_user.id, db=db
-        )
-        learning_rate = 0
-        # can_be_mark_as_worked = False
-    else:
-        word = word_data.word
-        # can_be_mark_as_worked = word_data.user_info.can_be_mark_as_worked
-        learning_rate = word_data.user_info.learning_rate
 
-    if learning_rate == 0:
-        await dictionary_service.change_word_learning_rate(
-            db=db, word_id=word.id, user_id=m.from_user.id,
-            change_for_amount=1, increase=True
-        )
-        await m.answer(
-            text=DictionaryTexts.word_remember_card(word),
-            reply_markup=DictionaryKeyboards.train_card()
+
+@router_.callback_query(SelectWordTranslationCallback.filter())
+async def select_word_translation(
+    call: CallbackQuery, callback_data: SelectWordTranslationCallback,
+    state: FSMContext, db: AsyncSession
+):
+    data = await state.get_data()
+    dict_train_translate_words = data.get('dict_train_translate_words')
+    last_word = data.get('dict_train_last_word')
+    dict_train_last_word_id = data.get('dict_train_last_word_id')
+
+    await state.clear()
+
+    if callback_data.right:
+        answer_msg = await call.message.edit_text(
+            text=DictionaryTexts.train_word_success(ru_words=dict_train_translate_words)
         )
     else:
-        await m.answer(
-            text=DictionaryTexts.word_remember_task(word=word.word),
-            reply_markup=DictionaryKeyboards.exit()
+        answer_msg = await call.message.edit_text(
+            text=DictionaryTexts.train_word_wrong(ru_words=dict_train_translate_words)
         )
-        await state.update_data(
-            dict_train_translate_words=list(map(lambda x: x.lower(), word.ru_words)),
-            dict_train_last_word=word.word,
-            dict_train_last_word_id=word.id
+
+    scheduler.scheduler.add_job(
+        func=call.bot.delete_messages,
+        kwargs=dict(chat_id=call.message.chat.id, message_ids=[answer_msg.message_id, call.message.message_id]),
+        trigger='date',
+        run_date=datetime.datetime.now() + datetime.timedelta(seconds=3)
+    )
+
+    # Изменяем рейтинг изучения юзера на этом слове
+    updated_learning_rate = await dictionary_service.change_word_learning_rate(
+        db=db, word_id=dict_train_last_word_id, user_id=call.from_user.id,
+        change_for_amount=1, increase=callback_data.right
+    )
+
+    # Если рейтинг изучения равен X, предлагаем отметить, как Отработанное
+    if updated_learning_rate >= 7:
+        await dictionary_service.mark_word_as_can_be_mark_as_worked(
+            word_id=dict_train_last_word_id, user_id=call.from_user.id, db=db
         )
-        await state.set_state(DictionaryStates.get_train_translate_word)
+        await call.message.answer(
+            text=DictionaryTexts.word_can_be_marked_as_worked(last_word),
+            reply_markup=DictionaryKeyboards.word_can_be_marked_as_worked(word_id=dict_train_last_word_id)
+        )
+
+    await call.message.answer(
+        **await get_message_train_word(
+            user_id=call.from_user.id, db=db, state=state, last_word=last_word
+        )
+    )
 
 
 @router_.callback_query(MarkDictWordAsWorkedCallback.filter())
@@ -218,10 +267,17 @@ async def mark_word_as_worked(
     db: AsyncSession
 ):
     await dictionary_service.mark_word_as_worked(word_id=callback_data.word_id, user_id=call.from_user.id, db=db)
-    await call.message.edit_text('Слово помечено как отработанное', reply_markup=None)
+    msg = await call.message.edit_text('Слово помечено как отработанное', reply_markup=None)
 
     if callback_data.from_training:
         pass
+
+    scheduler.scheduler.add_job(
+        func=call.bot.delete_message,
+        kwargs=dict(chat_id=call.message.chat.id, message_id=msg.message_id),
+        trigger='date',
+        run_date=datetime.datetime.now() + datetime.timedelta(seconds=3)
+    )
 
 
 @router_.callback_query(DictWordsListCallback.filter())
@@ -257,7 +313,9 @@ async def dict_words_list(
     )
 
     await call.message.edit_text(
-        text=DictionaryTexts.dict_words_list(user_words=words),
+        text=DictionaryTexts.dict_words_list(
+            user_words=words
+        ),
         reply_markup=DictionaryKeyboards.dict_words_list(
             page=callback_data.page, limit=callback_data.limit,
             last_page=(count_words // callback_data.limit),

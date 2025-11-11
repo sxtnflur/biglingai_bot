@@ -3,13 +3,13 @@ from schemas.dictionary import DictionaryWord, UserDictionaryWord
 
 class DictionaryTexts:
     MAIN = '''
-<b>Это словарь</b>
+{}
 
 Пополняй свой словарь словами и тренируйся на них
 
 <code>👁️</code> - <i>Посмотри свои слова в словаре</i>
 <code>➕</code> - <i>Узнай все способы добавить слово в словарь</i>
-<code>🕹️ Тренировка</code> - <i>Тренируй свой словарный запас по своему словарю</i>
+<code>🕹️ Тренировка</code> - <i>Тренируй и пополняй свой словарный запас</i>
 '''
     HOW_TO_ADD_WORD_INSTRUCTION = '''
 ❗ <b>Заходить в этот раздел необязательно</b> ❗
@@ -18,6 +18,22 @@ class DictionaryTexts:
 <i>Попробуй прямо сейчас, введи любое ОДНО слово на русском или английском:</i>
 '''.strip()
 
+    @staticmethod
+    def main(
+            count_total_worked_words: int,
+            count_worked_in_bot_words: int,
+            count_already_know_words: int
+    ):
+        return DictionaryTexts.MAIN.format(
+            '''Ты знаешь как минимум <b>{}</b> слов:
+    - <b>{}</b> узнал в боте
+    - <b>{}</b> знал изначально'''.format(count_total_worked_words, count_worked_in_bot_words, count_already_know_words)
+            if count_total_worked_words else ''
+        )
+
+    @staticmethod
+    def select_right_translation(word: str):
+        return '<b>Выбери правильный вариант перевода для слова</b>\n\n<i>{}</i>'.format(word.capitalize())
 
     @staticmethod
     def what_do_with_your_text(text: str):
@@ -58,7 +74,8 @@ class DictionaryTexts:
 
     @staticmethod
     def word_can_be_marked_as_worked(word: str):
-        return '👏 Похоже, вы запомнили слово <blockquote>{}</blockquote>\n\nПереместим его в "Отработанные"?'.format(word)
+        return '👏 Похоже, вы запомнили слово <blockquote>{}</blockquote>\n\nПереместим его в "Отработанные"?'.format(
+            word)
 
     @staticmethod
     def dict_words_list(user_words: list[UserDictionaryWord]):
@@ -73,6 +90,7 @@ class DictionaryTexts:
                 return '🟡'
             else:
                 return '🟢'
+
         for uw in user_words:
             print(f'{uw.learning_rate=}')
 

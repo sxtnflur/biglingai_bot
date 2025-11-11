@@ -1,10 +1,11 @@
 from config import settings
 from database import models
+import random
 from openai import AsyncOpenAI
 from schemas.dictionary import DictionaryWord, AIGeneratedDictionaryWord, DictionaryWordWithUserInfo, UserWord, \
     UserDictionaryWord
 from services import OpenAIService
-from sqlalchemy import select, insert, func, update, and_
+from sqlalchemy import select, insert, func, update, and_, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from typing_extensions import Literal
@@ -18,10 +19,11 @@ class DictionaryService:
             self, word_id: int, user_id: int, db: AsyncSession
     ):
         await db.execute(
-            insert(models.UserDictionaryWord)
-            .values(
-                user_id=user_id, word_id=word_id
-            )
+            text('''
+            INSERT INTO users_dictionary_words (user_id, word_id)
+            VALUES (:user_id, :word_id)
+            ON CONFLICT (user_id, word_id) DO NOTHING
+            ''').bindparams(user_id=user_id, word_id=word_id)
         )
 
     async def add_word_to_dictionary(
@@ -32,6 +34,38 @@ class DictionaryService:
             .values(word=word, ru_words=ru_words, level=level)
             .returning(models.DictionaryWord.id)
         )
+
+    async def get_randow_word_to_train(self, user_id: int, db: AsyncSession, last_word: str | None = None):
+        count_available_words = await self.count_user_dict_words(
+            user_id=user_id, db=db,
+            can_be_mark_as_worked=False, is_worked=False
+            # only_cant_be_worked=True, only_not_worked=True
+        )
+        print(f'{count_available_words=}')
+
+        # Если слов меньше 10, берем слово из чужого словаря с элементом рандома
+        if count_available_words < 10 and random.randint(0, 2):
+            user_level = await self.count_user_level(
+                user_id=user_id, db=db
+            )
+            word = await self.get_random_word_from_dictionary(
+                db=db,
+                user_id=user_id,
+                user_level=user_level,
+                exclude_words=[last_word],
+                exclude_all_user_words=True
+            )
+            await self.join_dictionary_word_to_user(
+                word_id=word.id, user_id=user_id, db=db
+            )
+            learning_rate = 0
+        else:
+            word_data = await self.get_random_user_word_from_dictionary(
+                user_id=user_id, db=db, exclude_words=[last_word]
+            )
+            word = word_data.word
+            learning_rate = word_data.user_info.learning_rate
+        return word, learning_rate
 
     async def join_or_generate_word(
             self, word: str, user_id: int, db: AsyncSession
@@ -164,6 +198,18 @@ class DictionaryService:
             .values(can_be_mark_as_worked=True)
         )
 
+    async def mark_word_as_already_know(self, word: str, user_id: int, db: AsyncSession):
+        await db.execute(
+            update(models.UserDictionaryWord)
+            .filter(
+                models.UserDictionaryWord.user_id == user_id,
+                models.UserDictionaryWord.word_id == (
+                    select(models.DictionaryWord.id).filter(models.DictionaryWord.word == word)
+                ).subquery()
+            )
+            .values(already_know=True, is_worked=True, can_be_mark_as_worked=True)
+        )
+
     async def mark_word_as_worked(
             self, word_id: int, user_id: int, db: AsyncSession
     ) -> None:
@@ -180,8 +226,8 @@ class DictionaryService:
         self, user_id: int, db: AsyncSession
     ) -> int:
         return await self.count_user_dict_words(
-            user_id=user_id, db=db,
-            only_not_worked=False, only_cant_be_worked=False
+            user_id=user_id, db=db
+            # only_not_worked=False, only_cant_be_worked=False
         )
 
     async def get_user_dictionary_words(
@@ -224,8 +270,14 @@ class DictionaryService:
 
     async def count_user_dict_words(
             self, user_id: int, db: AsyncSession,
-            only_not_worked: bool = True,
-            only_cant_be_worked: bool = True
+            is_worked: bool = None,
+            can_be_mark_as_worked: bool = None,
+            already_know: bool = None
+
+            # only_not_worked: bool = True,
+            # only_cant_be_worked: bool = True,
+            # only_already_know: bool = False,
+            # only_not_already_know: bool = False
     ) -> int:
         stmt = (
             select(func.count())
@@ -233,10 +285,12 @@ class DictionaryService:
                 models.UserDictionaryWord.user_id == user_id
             )
         )
-        if only_not_worked:
-            stmt = stmt.filter(models.UserDictionaryWord.is_worked.is_(False))
-        if only_cant_be_worked:
-            stmt = stmt.filter(models.UserDictionaryWord.can_be_mark_as_worked.is_(False))
+        if is_worked is not None:
+            stmt = stmt.filter(models.UserDictionaryWord.is_worked.is_(is_worked))
+        if can_be_mark_as_worked is not None:
+            stmt = stmt.filter(models.UserDictionaryWord.can_be_mark_as_worked.is_(can_be_mark_as_worked))
+        if already_know is not None:
+            stmt = stmt.filter(models.UserDictionaryWord.already_know.is_(already_know))
         return await db.scalar(stmt)
 
     async def count_user_level(self, user_id: int, db: AsyncSession) -> float:
@@ -250,3 +304,72 @@ class DictionaryService:
             )
         )
         return await db.scalar(stmt) or 0
+
+    async def get_wrong_words(
+            self,
+            user_id: int,
+            exclude_word_id: int,
+            db: AsyncSession,
+            count_words: int = 5,
+            get_en_words: bool = True
+    ) -> list[str]:
+
+        if get_en_words:
+            # Оригинальная логика для английских слов
+            word_field = models.DictionaryWord.word
+
+            stmt = (
+                select(word_field)
+                .select_from(models.UserDictionaryWord)
+                .join(models.UserDictionaryWord.word)
+                .filter(
+                    models.UserDictionaryWord.user_id == user_id,
+                    models.UserDictionaryWord.word_id != exclude_word_id
+                )
+                .limit(count_words)
+                .order_by(func.random())
+            )
+        else:
+            # Новая логика для русских слов - выбираем одно случайное русское слово
+            # Предполагается, что ru_words - это массив/список в БД
+            stmt = (
+                select(func.unnest(models.DictionaryWord.ru_words).label("random_ru_word"))
+                .select_from(models.UserDictionaryWord)
+                .join(models.UserDictionaryWord.word)
+                .filter(
+                    models.UserDictionaryWord.user_id == user_id,
+                    models.UserDictionaryWord.word_id != exclude_word_id
+                )
+                .limit(count_words)
+                .order_by(func.random())
+            )
+
+        words_result = await db.scalars(stmt)
+        words: list[str] = words_result.all()
+
+        lack_count_words = count_words - len(words)
+
+        if lack_count_words > 0:
+            if get_en_words:
+                add_stmt = (
+                    select(models.DictionaryWord.word)
+                    .filter(
+                        models.DictionaryWord.id != exclude_word_id,
+                        models.DictionaryWord.word.notin_(words) if words else True
+                    )
+                    .limit(lack_count_words)
+                    .order_by(func.random())
+                )
+            else:
+                add_stmt = (
+                    select(func.unnest(models.DictionaryWord.ru_words).label("random_ru_word"))
+                    .filter(models.DictionaryWord.id != exclude_word_id)
+                    .limit(lack_count_words)
+                    .order_by(func.random())
+                )
+
+            add_words_result = await db.scalars(add_stmt)
+            add_words = add_words_result.all()
+            words += add_words
+
+        return words

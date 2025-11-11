@@ -1,5 +1,8 @@
+import random
+
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from bot.callbacks.dictionary import AddWordToDictCallback, MarkDictWordAsWorkedCallback, DictWordsListCallback
+from bot.callbacks.dictionary import AddWordToDictCallback, MarkDictWordAsWorkedCallback, DictWordsListCallback, \
+    TrainDictCallback, SelectWordTranslationCallback
 from bot.callbacks.translator import TranslateWordCallback, TranslateThisPhraseCallback
 from bot.keyboards.base import BaseKeyboards
 from bot.texts.base import BaseTexts
@@ -15,10 +18,10 @@ class DictionaryKeyboards:
                 text='👁️', callback_data=DictWordsListCallback(page=0, limit=10).pack()
             ),
                 InlineKeyboardButton(
-                text='➕', callback_data='how-to-add-word-to-dict'
-            )],
+                    text='➕', callback_data='how-to-add-word-to-dict'
+                )],
             [InlineKeyboardButton(
-                text='🕹️ Тренировка', callback_data='train-my-dict'
+                text='🕹️ Тренировка', callback_data=TrainDictCallback().pack()
             )],
             [InlineKeyboardButton(
                 text=BaseTexts.BACK, callback_data='start'
@@ -28,9 +31,22 @@ class DictionaryKeyboards:
     @staticmethod
     def train_card():
         return InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text='Следующее ⏩', callback_data='train-my-dict')],
+            [InlineKeyboardButton(text='Запомнил ⏩', callback_data=TrainDictCallback().pack())],
+            [InlineKeyboardButton(text='Уже знаю', callback_data=TrainDictCallback(already_know=True).pack())],
             [InlineKeyboardButton(text='⏪ Выйти', callback_data='dictionary')]
         ])
+
+    @staticmethod
+    def select_right_translation(
+            right_word: str, wrong_words: list[str]
+    ):
+        btns = [InlineKeyboardButton(text=word.capitalize(), callback_data=SelectWordTranslationCallback().pack()) for word in wrong_words]
+        btns.append(InlineKeyboardButton(text=right_word.capitalize(), callback_data=SelectWordTranslationCallback(right=True).pack()))
+        random.shuffle(btns)
+        return InlineKeyboardMarkup(
+            inline_keyboard=BaseKeyboards.create_list_kb(objs=btns, get_btn=lambda x: x, width=2)
+                            + [[InlineKeyboardButton(text='⏪ Выйти', callback_data='dictionary')]]
+        )
 
     @staticmethod
     def word_is_added_to_dict():
@@ -90,18 +106,18 @@ class DictionaryKeyboards:
         if page > 0:
             pag_row.append(InlineKeyboardButton(
                 text='⬅', callback_data=DictWordsListCallback(
-                    page=page-1, limit=limit, order_asc=order_asc, order_by=order_by
+                    page=page - 1, limit=limit, order_asc=order_asc, order_by=order_by
                 ).pack()
             ))
         if last_page:
             pag_row.append(InlineKeyboardButton(
-                    text='{}/{}'.format(page+1, last_page+1),
-                    callback_data='-'
-                ))
+                text='{}/{}'.format(page + 1, last_page + 1),
+                callback_data='-'
+            ))
         if page != last_page:
             pag_row.append(InlineKeyboardButton(
                 text='➡', callback_data=DictWordsListCallback(
-                    page=page+1, limit=limit, order_asc=order_asc, order_by=order_by
+                    page=page + 1, limit=limit, order_asc=order_asc, order_by=order_by
                 ).pack()
             ))
         return InlineKeyboardMarkup(inline_keyboard=[

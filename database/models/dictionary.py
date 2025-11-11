@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, ARRAY, String
+from sqlalchemy import ForeignKey, ARRAY, String, BIGINT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base, IntPk
 
@@ -10,6 +10,7 @@ class DictionaryWord(Base):
     word: Mapped[str]
     ru_words: Mapped[list[str]] = mapped_column(ARRAY(String))
     level: Mapped[int]
+    freq: Mapped[int | None] = mapped_column(BIGINT)
 
 
 class UserDictionaryWord(Base):
@@ -20,5 +21,6 @@ class UserDictionaryWord(Base):
     learning_rate: Mapped[int] = mapped_column(server_default='0')
     can_be_mark_as_worked: Mapped[bool] = mapped_column(server_default='False')
     is_worked: Mapped[bool] = mapped_column(server_default='False')
+    already_know: Mapped[bool] = mapped_column(server_default='False')
 
     word = relationship(DictionaryWord, foreign_keys=[word_id])

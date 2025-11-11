@@ -2,3 +2,4 @@
 .env
 __pycache__
 files/**
+add_dict_words.py

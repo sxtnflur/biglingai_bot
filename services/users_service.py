@@ -88,8 +88,6 @@ RETURNING credits, sub_end
         return UserWithSubSchema.model_validate(user)
 
     async def update_user_credits(self, user_tid: int, credits: int, action: Literal['up', 'down']) -> int:
-        if action == 'down' and (not await self.get_user_credits(user_tid)):
-            raise CreditsOverException
         stmt = (
             update(User)
             .filter(User.id == user_tid)

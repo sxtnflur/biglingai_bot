@@ -30,6 +30,7 @@ class UserDictionaryWord(BaseModel):
     learning_rate: int
     can_be_mark_as_worked: bool
     is_worked: bool
+    already_know: bool
     word: DictionaryWord
 
     class Config: from_attributes = True

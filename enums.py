@@ -20,3 +20,18 @@ class ChattingMessageType(int, Enum):
         if val > 3:
             val = 1
         return ChattingMessageType(val)
+
+
+class Audience(Enum):
+    all = auto()
+    paid = auto()
+    not_paid = auto()
+
+    @property
+    def label(self) -> str:
+        labels = {
+            Audience.all: 'Все',
+            Audience.paid: 'Оплатившие',
+            Audience.not_paid: 'Не оплатившие'
+        }
+        return labels.get(self)

@@ -5,7 +5,7 @@ from openai import AsyncOpenAI
 from schemas.dictionary import DictionaryWord, AIGeneratedDictionaryWord, DictionaryWordWithUserInfo, UserWord, \
     UserDictionaryWord
 from services import OpenAIService
-from sqlalchemy import select, insert, func, update, and_, text
+from sqlalchemy import select, insert, func, update, and_, text, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from typing_extensions import Literal
@@ -44,7 +44,7 @@ class DictionaryService:
         print(f'{count_available_words=}')
 
         # Если слов меньше 10, берем слово из чужого словаря с элементом рандома
-        if count_available_words < 10 and random.randint(0, 2):
+        if (count_available_words <= 1) or (count_available_words < 10 and random.randint(0, 2)):
             user_level = await self.count_user_level(
                 user_id=user_id, db=db
             )
@@ -160,7 +160,9 @@ class DictionaryService:
             .where(
                 ~models.DictionaryWord.id.in_(subq_worked_words.subquery())
             )
-            .order_by(func.abs(models.DictionaryWord.level - user_level))  # ближайший уровень
+            .order_by(func.abs(models.DictionaryWord.level - user_level),
+                      func.random()
+                      )  # ближайший уровень
             .limit(1)  # ограничим для случайного выбора
         )
         if exclude_words:
@@ -308,15 +310,46 @@ class DictionaryService:
     async def get_wrong_words(
             self,
             user_id: int,
-            exclude_word_id: int,
+            exclude_word: str,  # Всегда английское слово
             db: AsyncSession,
             count_words: int = 5,
             get_en_words: bool = True
     ) -> list[str]:
 
+        # Находим все русские переводы исключаемого английского слова
+        exclude_translations_stmt = (
+            select(models.DictionaryWord.ru_words)
+            .where(models.DictionaryWord.word == exclude_word)
+        )
+        exclude_translations_result = await db.scalars(exclude_translations_stmt)
+        exclude_translations_lists = exclude_translations_result.all()
+
+        # Разворачиваем список списков в плоский список
+        exclude_translations = []
+        for translation_list in exclude_translations_lists:
+            if translation_list:
+                exclude_translations.extend(translation_list)
+
         if get_en_words:
-            # Оригинальная логика для английских слов
+            # Возвращаем английские слова
             word_field = models.DictionaryWord.word
+
+            # Исключаем слова с общими переводами
+            from sqlalchemy import or_
+
+            if exclude_translations:
+                # Создаем условия для каждого исключаемого перевода
+                exclude_conditions = or_(*[
+                    models.DictionaryWord.ru_words.any(translation)
+                    for translation in exclude_translations
+                ])
+
+                words_with_common_translations = (
+                    select(models.DictionaryWord.id)
+                    .where(exclude_conditions)
+                ).scalar_subquery()
+            else:
+                words_with_common_translations = select(None).where(False).scalar_subquery()
 
             stmt = (
                 select(word_field)
@@ -324,52 +357,97 @@ class DictionaryService:
                 .join(models.UserDictionaryWord.word)
                 .filter(
                     models.UserDictionaryWord.user_id == user_id,
-                    models.UserDictionaryWord.word_id != exclude_word_id
+                    models.DictionaryWord.word != exclude_word,
+                    ~models.DictionaryWord.id.in_(words_with_common_translations)
                 )
                 .limit(count_words)
                 .order_by(func.random())
             )
         else:
-            # Новая логика для русских слов - выбираем одно случайное русское слово
-            # Предполагается, что ru_words - это массив/список в БД
-            stmt = (
-                select(func.unnest(models.DictionaryWord.ru_words).label("random_ru_word"))
+            # Возвращаем русские слова, исключая переводы исключаемого слова
+            # Сначала находим все ID слов пользователя
+            user_words_subq = (
+                select(models.DictionaryWord.id)
                 .select_from(models.UserDictionaryWord)
                 .join(models.UserDictionaryWord.word)
-                .filter(
-                    models.UserDictionaryWord.user_id == user_id,
-                    models.UserDictionaryWord.word_id != exclude_word_id
-                )
-                .limit(count_words)
-                .order_by(func.random())
+                .filter(models.UserDictionaryWord.user_id == user_id)
+                .subquery()
             )
 
+            # Затем разворачиваем русские слова и фильтруем их
+            stmt = (
+                select(func.unnest(models.DictionaryWord.ru_words).label("random_ru_word"))
+                .where(
+                    models.DictionaryWord.id.in_(select(user_words_subq.c.id))
+                )
+            )
+
+            # Фильтруем русские слова на Python уровне
+            words_result = await db.scalars(stmt)
+            all_ru_words = words_result.all()
+
+            # Исключаем слова из exclude_translations
+            filtered_words = [word for word in all_ru_words if word not in exclude_translations]
+
+            # Берем случайные слова
+            import random
+            words = random.sample(filtered_words, min(count_words, len(filtered_words))) if filtered_words else []
+
+        if not get_en_words:
+            # Для русского режима мы уже получили слова выше
+            lack_count_words = count_words - len(words)
+
+            if lack_count_words > 0:
+                # Дополняем случайными русскими словами из всего словаря
+                all_ru_words_stmt = (
+                    select(func.unnest(models.DictionaryWord.ru_words).label("random_ru_word"))
+                )
+                all_ru_words_result = await db.scalars(all_ru_words_stmt)
+                all_ru_words = all_ru_words_result.all()
+
+                # Фильтруем и берем дополнительные слова
+                filtered_add_words = [word for word in all_ru_words
+                                      if word not in exclude_translations and word not in words]
+
+                if filtered_add_words:
+                    add_words = random.sample(filtered_add_words, min(lack_count_words, len(filtered_add_words)))
+                    words.extend(add_words)
+
+            return words[:count_words]
+
+        # Для английского режима продолжаем старую логику
         words_result = await db.scalars(stmt)
         words: list[str] = words_result.all()
 
         lack_count_words = count_words - len(words)
 
         if lack_count_words > 0:
-            if get_en_words:
-                add_stmt = (
-                    select(models.DictionaryWord.word)
-                    .filter(
-                        models.DictionaryWord.id != exclude_word_id,
-                        models.DictionaryWord.word.notin_(words) if words else True
-                    )
-                    .limit(lack_count_words)
-                    .order_by(func.random())
-                )
+            if exclude_translations:
+                exclude_conditions = or_(*[
+                    models.DictionaryWord.ru_words.any(translation)
+                    for translation in exclude_translations
+                ])
+
+                words_with_common_translations = (
+                    select(models.DictionaryWord.id)
+                    .where(exclude_conditions)
+                ).scalar_subquery()
             else:
-                add_stmt = (
-                    select(func.unnest(models.DictionaryWord.ru_words).label("random_ru_word"))
-                    .filter(models.DictionaryWord.id != exclude_word_id)
-                    .limit(lack_count_words)
-                    .order_by(func.random())
+                words_with_common_translations = select(None).where(False).scalar_subquery()
+
+            add_stmt = (
+                select(models.DictionaryWord.word)
+                .filter(
+                    models.DictionaryWord.word != exclude_word,
+                    ~models.DictionaryWord.id.in_(words_with_common_translations),
+                    models.DictionaryWord.word.notin_(words) if words else True
                 )
+                .limit(lack_count_words)
+                .order_by(func.random())
+            )
 
             add_words_result = await db.scalars(add_stmt)
             add_words = add_words_result.all()
-            words += add_words
+            words.extend(add_words)
 
-        return words
+        return words[:count_words]

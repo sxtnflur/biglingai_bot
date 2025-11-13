@@ -66,7 +66,9 @@ dictionary_service = DictionaryService(
 )
 
 logger_service = LoggerService(
-    admin_tg_ids=[-4805765332], bot_token=settings.BOT_TOKEN
+    admin_tg_ids=[
+        # -4805765332
+    ], bot_token=settings.BOT_TOKEN
 )
 
 

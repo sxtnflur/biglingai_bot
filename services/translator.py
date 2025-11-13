@@ -1,3 +1,4 @@
+import aiohttp
 from pydantic import BaseModel
 from typing_extensions import Literal
 from .ai.openai_base import OpenAIService
@@ -18,6 +19,27 @@ class TranslationResult(BaseModel):
         else:
             return self.translated
 
+
+class YandexTranslator:
+    base_url: str = 'https://translate.api.cloud.yandex.net/translate/v2/'
+    # async def send_request(self, ..., method: str = 'translate'):
+    #     ...
+
+    async def translate(self):
+        async with aiohttp.ClientSession() as session:
+            resp = await session.post(
+                url=self.base_url + 'translate',
+                json={
+                    'sourceLanguageCode': 'en',
+                    'targetLanguageCode': 'ru',
+                    'texts': [
+                        'becoming'
+                    ],
+
+                }
+            )
+            res_data = await resp.json()
+            print(f'{res_data=}')
 
 class TranslatorService:
     def __init__(self, ai_translator: OpenAIService):

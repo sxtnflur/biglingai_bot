@@ -106,7 +106,7 @@ async def get_message_train_word(user_id: int, state: FSMContext, db: AsyncSessi
     elif learning_rate < 4:
         en_words = random.randint(0, 1)
         wrong_words = await dictionary_service.get_wrong_words(
-            user_id=user_id, exclude_word_id=word.id, db=db, get_en_words=en_words
+            user_id=user_id, exclude_word=word.word, db=db, get_en_words=en_words
         )
         await state.update_data(
             dict_train_translate_words=[word.word],

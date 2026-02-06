@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     MESSAGES_EXP: int = 30 * 60
     REDIS_URL: str
     OPENAI_KEY: str
-    OPENAI_BASE_URL: str
+    OPENAI_BASE_URL: str | None = None
     OPENAI_MODEL: str
 
     DATABASE_URL: str
@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: str
     ELEVENLABS_MODEL: str
     ELEVENLABS_DEFAULT_VOICE_ID: str
+
+    LEMONFOX_API_KEY: str
 
 
 settings = Settings(_env_file='.env')

@@ -9,6 +9,8 @@ from services import (
 )
 from payments import YooKassaService, PaymentFactory
 from config import settings
+from services.ai.elevenlabs_service.lemonfox import LemonfoxService
+from services.ai.elevenlabs_service.murf_voice import MurfService
 from services.dictionary import DictionaryService
 from services.logger import LoggerService
 from services.payments_service import PaymentsService
@@ -24,8 +26,14 @@ openai_client = AsyncOpenAI(
     api_key=settings.OPENAI_KEY, base_url=settings.OPENAI_BASE_URL
 )
 
-speacker_ai = Elevenlabs(
-    api_key=settings.ELEVENLABS_API_KEY, model=settings.ELEVENLABS_MODEL
+# speacker_ai = Elevenlabs(
+#     api_key=settings.ELEVENLABS_API_KEY, model=settings.ELEVENLABS_MODEL
+# )
+# speacker_ai = MurfService(
+#     api_key=settings.MURF_API_KEY
+# )
+speacker_ai = LemonfoxService(
+    api_key=settings.LEMONFOX_API_KEY
 )
 
 langlearning_openai_service = LangLearningAIService(

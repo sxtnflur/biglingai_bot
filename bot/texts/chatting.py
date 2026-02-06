@@ -62,7 +62,7 @@ class ChattingTexts:
                     f"❌ <s>{mistake.incorrect}</s> ➡ <b>{mistake.correct}</b>\n"
                     f"<blockquote expandable>ℹ {mistake.explanation}</blockquote>\n"
                     f"📌 <b>Например:</b> " +
-                    ' | '.join(list(map(
+                    ' '.join(list(map(
                         lambda x: '<blockquote>{}</blockquote>'.format(x),
                         mistake.example
                     )))

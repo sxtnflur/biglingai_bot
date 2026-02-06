@@ -56,10 +56,11 @@ async def test_select_trans_word():
                 )
                 assert ru_word not in words
 
+
 async def translate():
     await YandexTranslator().translate()
 
 
 # Пример запуска:
 if __name__ == "__main__":
-    asyncio.run(translate())
+    asyncio.run(speacker_ai.get_my_voices())

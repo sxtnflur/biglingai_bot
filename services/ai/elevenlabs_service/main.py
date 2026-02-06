@@ -4,7 +4,6 @@ from elevenlabs import VoiceSettings
 from elevenlabs.client import AsyncElevenLabs
 from enum import Enum
 from config import settings
-from httpx import AsyncClient, Proxy
 from .base import BaseAiSpeacker
 
 

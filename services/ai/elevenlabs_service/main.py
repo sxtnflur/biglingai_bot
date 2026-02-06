@@ -1,7 +1,10 @@
 from typing import AsyncIterator
 
-from elevenlabs import VoiceSettings
-from elevenlabs.client import AsyncElevenLabs
+try:
+    from elevenlabs import VoiceSettings
+    from elevenlabs.client import AsyncElevenLabs
+except:
+    pass
 from enum import Enum
 from config import settings
 from .base import BaseAiSpeacker

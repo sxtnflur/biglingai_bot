@@ -1,4 +1,7 @@
-from murf import MurfRegion, AsyncMurf
+try:
+    from murf import MurfRegion, AsyncMurf
+except:
+    pass
 from services.ai import BaseAiSpeacker
 from typing_extensions import AsyncIterator
 

@@ -29,7 +29,7 @@ class BaseTexts:
 
 <b>Дополнительно:</b>
 <tg-emoji emoji-id="5413879192267805083">🗓</tg-emoji> <a href="{settings.BOT_URL}?start=screen-sub">Подписки</a> - <i>Купи подписку и пользуйся всем функционалом бота!</i>
-<tg-emoji emoji-id="5229064374403998351">🛍</tg-emoji> <a href="{settings.BOT_URL}?start=screen-ref">Реф. программа</a> - <i>Получай кредиты бесплатно за приглашенных друзей!</i>
+<tg-emoji emoji-id="5229064374403998351">🛍</tg-emoji> <a href="{settings.BOT_URL}?start=screen-ref">Реф. программа</a> - <i>Получи подписку бесплатно за приглашенных друзей!</i>
 '''.strip()
     SUB = '<b>Подписка закончится через:</b> <code>{}</code>'
 

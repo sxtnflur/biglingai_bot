@@ -1,10 +1,10 @@
 from datetime import datetime
 from uuid import UUID
 
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, Poll, PollAnswer
 from bot.callbacks.mistakes import MistakesListCallback, MistakeGroupListCallback, MistakeCallback, \
     TrainMistakeGroupCallback, TrainMistakeGroupAnswerCallback, MistakesListByDialogCallback, DeleteMistakeCallback
 from bot.keyboards.mistakes import MistakesKeyboards
@@ -15,12 +15,14 @@ from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.mistakes_service import MistakesService
 from .. import utils
+from ..keyboards.base import BaseKeyboards
 from ..keyboards.credits import CreditsKeyboards
 from ..middlewares import DatabaseMiddleware
 from ..texts.base import BaseTexts
 from ..texts.mistakes import MistakesTexts
 from depends import langlearning_openai_service
 from database.decorator import db_connect
+from ..utils.do_while import send_action_while_do_func
 
 router = Router()
 
@@ -73,10 +75,16 @@ async def mistakes_types_list_handler(
     else:
         text = MistakesTexts.GROUPS_IF_NO_MISTAKES
 
-    await call.message.edit_text(
-        text=text,
-        reply_markup=reply_markup
-    )
+    try:
+        await call.message.edit_text(
+            text=text,
+            reply_markup=reply_markup
+        )
+    except:
+        await call.message.answer(
+            text=text,
+            reply_markup=reply_markup
+        )
 
 
 @router.callback_query(MistakeGroupListCallback.filter())
@@ -181,10 +189,44 @@ async def create_train_mistake_group(
     )
 
 
+@db_connect()
+async def send_train_poll(
+        user_id: int, bot: Bot,
+        by_group: str | None = None,
+        by_dialog_uuid: str | None = None,
+        *, db: AsyncSession | None = None
+) -> Message:
+    random_mistake = await MistakesService(db).get_random_mistake(
+        user_id=user_id, by_type_key=by_group,
+        by_dialog_uuid=by_dialog_uuid
+    )
+    task = await send_action_while_do_func(
+        coroutine=langlearning_openai_service.choose_one_variant(
+            user_message=random_mistake.user_message,
+            explanation=random_mistake.explanation,
+            group=random_mistake.type.name
+        ),
+        chat_id=user_id,
+        bot=bot,
+        action='typing'
+    )
+    return await bot.send_poll(
+        chat_id=user_id,
+        question=task.task,
+        options=list(map(lambda x: x.text, task.choices)),
+        explanation=task.explanation,
+        correct_option_id=[i for i, choice in enumerate(task.choices) if choice.is_right][0],
+        type='quiz',
+        reply_markup=BaseKeyboards.create_kb_back(MistakesListCallback().pack()),
+        is_anonymous=False
+    )
+
+
 @router.callback_query(TrainMistakeGroupCallback.filter())
 @db_connect()
 async def train_mistake_group(
-    call: CallbackQuery, callback_data: TrainMistakeGroupCallback, *,
+    call: CallbackQuery, callback_data: TrainMistakeGroupCallback,
+    state: FSMContext, *,
     db: AsyncSession
 ):
     if not await UsersService(db).do_paid_action(user_tid=call.from_user.id, credits=1):
@@ -194,13 +236,68 @@ async def train_mistake_group(
         )
         return
 
-    message_data = await create_train_mistake_group(
+    poll_message: Message = await send_train_poll(
         user_id=call.from_user.id,
+        bot=call.bot,
         by_group=callback_data.group,
         by_dialog_uuid=callback_data.dialog_uuid,
         db=db
     )
-    await call.message.answer(**message_data)
+    await state.update_data(
+        train_mistakes_group=callback_data.group,
+        train_mistakes_dialog=callback_data.dialog_uuid,
+        msg_to_del_rm=poll_message.message_id
+    )
+
+    # message_data = await create_train_mistake_group(
+    #     user_id=call.from_user.id,
+    #     by_group=callback_data.group,
+    #     by_dialog_uuid=callback_data.dialog_uuid,
+    #     db=db
+    # )
+    # await call.message.answer_poll(
+    #     question=
+    # )
+    # await call.message.answer(**message_data)
+
+
+@router.poll_answer()
+@db_connect()
+async def train_mistake_answer(
+    poll_answer: PollAnswer,
+    state: FSMContext, *,
+    db: AsyncSession
+):
+    if not await UsersService(db).do_paid_action(user_tid=poll_answer.user.id):
+        await poll_answer.bot.send_message(
+            poll_answer.user.id,
+            text=BaseTexts.CREDITS_OVER,
+            reply_markup=CreditsKeyboards.go_to_credits_shop()
+        )
+        return
+
+    data = await state.get_data()
+    msg_to_del_rm = data.get('msg_to_del_rm')
+
+    poll_message = await send_train_poll(
+        user_id=poll_answer.user.id,
+        bot=poll_answer.bot,
+        by_group=data.get('train_mistakes_group'),
+        by_dialog_uuid=data.get('train_mistakes_dialog'),
+        db=db
+    )
+    await state.update_data(
+        msg_to_del_rm=poll_message.message_id
+    )
+    if msg_to_del_rm:
+        try:
+            await poll_answer.bot.edit_message_reply_markup(
+                message_id=msg_to_del_rm,
+                chat_id=poll_answer.user.id,
+                reply_markup=None
+            )
+        except Exception as e:
+            print(f'{e=}')
 
 
 @router.callback_query(TrainMistakeGroupAnswerCallback.filter())
@@ -243,10 +340,10 @@ async def train_mistake_answer(
         )
         return
 
-    message_data = await create_train_mistake_group(
+    await send_train_poll(
         user_id=call.from_user.id,
+        bot=call.bot,
         by_group=callback_data.group,
         by_dialog_uuid=callback_data.dialog_uuid,
         db=db
     )
-    await call.message.answer(**message_data)

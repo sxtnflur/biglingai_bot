@@ -6,14 +6,14 @@ from openai.types.chat import ChatCompletionMessageParam
 from services.ai.elevenlabs_service import BaseAiSpeacker
 from services.ai.grammar import GrammarAIService
 from services.ai.openai_base import OpenAIService
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing_extensions import Literal, TypedDict, Union
 from schemas.chatting import TalkingResponse, AnswerTalking, AnswerTalkingResult, AnswerTalkingIndications, AIAnswer, \
     DialogType, Mistake
 
 
 class Choice(BaseModel):
-    text: str
+    text: str = Field(max_length=100)
     is_right: bool
 
 
@@ -22,8 +22,9 @@ class ResChoice(Choice):
 
 
 class TaskWithVariants(BaseModel):
-    task: str
+    task: str = Field(max_length=255)
     choices: list[Choice]
+    explanation: str = Field(max_length=200)
 
     @property
     def enumerated_choices(self):
@@ -79,16 +80,27 @@ In "end_talking" set true if the dialog should be completed.
         )
 
     async def choose_one_variant(
-        self, prompt: str
+        self,
+        user_message: str,
+        explanation: str,
+        group: str | None = None
     ) -> TaskWithVariants:
+        prompt = (f'Придумай задание для того, чтобы отточить ошибки ' +
+                  f'из группы {group}' if group else ''
+                  f'\nПример ошибки: {user_message}. '
+                  f'Пояснение к ошибке: {explanation}')
         openai_service = OpenAIService(
             openai_client=self.openai,
-            system_message='''
-Ты - бот для изучения английского языка.
-Придумай для пользователя задание на знание английского языка с вариантами ответа.
-Пояснения к заданию давай на русском языке.
-Правильный ответ должен быть один.
-'''.strip(),
+            system_message=(
+                'Ты - бот для русскоговорящих, изучающих английский язык. '
+                'Придумай для пользователя задание на знание английского языка с вариантами ответа. '
+                'Не давай никаких подсказок, кроме как в explanation. '
+                'Explanation человек увидит только после выбора ответа, '
+                'в нем должно быть пояснение почему именно этот вариант правильный. '
+                'Explanataion должен быть до 200 символов. '
+                'Текст задачи до 255 символов. Текст каждого варианта до 100 символов.'
+                'Правильный ответ должен быть один.'
+            ),
             model=self.model
         )
         return await openai_service.send_text_get_schema(

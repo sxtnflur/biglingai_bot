@@ -11,6 +11,7 @@ from bot.keyboards.base import BaseKeyboards
 from bot.middlewares import DatabaseMiddleware
 from bot.texts.base import BaseTexts
 from bot.texts.dictionary import DictionaryTexts
+from database.decorator import db_connect
 from depends import dictionary_service, translator, scheduler
 from services.users_service import UsersService
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,15 +35,34 @@ async def how_to_add_word_to_dict(
     )
 
 
-router_ = Router()
-router.include_router(router_)
-router_.message.middleware(DatabaseMiddleware())
-router_.callback_query.middleware(DatabaseMiddleware())
+@db_connect()
+async def start_dictionary_message(
+        message: Message, *, db: AsyncSession
+):
+    count_total_worked_words = await dictionary_service.count_user_dict_words(
+        user_id=message.from_user.id, db=db,
+        can_be_mark_as_worked=True
+    )
+    count_already_know_words = await dictionary_service.count_user_dict_words(
+        user_id=message.from_user.id, db=db,
+        can_be_mark_as_worked=True, already_know=True
+    )
+    count_worked_in_bot_words = await dictionary_service.count_user_dict_words(
+        user_id=message.from_user.id, db=db,
+        can_be_mark_as_worked=True, already_know=False
+    )
+    await message.answer(
+        DictionaryTexts.main(
+            count_total_worked_words, count_worked_in_bot_words, count_already_know_words
+        ),
+        reply_markup=DictionaryKeyboards.main()
+    )
 
 
-@router_.callback_query(F.data == 'dictionary')
+@router.callback_query(F.data == 'dictionary')
+@db_connect()
 async def start_dictionary(
-        call: CallbackQuery, db: AsyncSession
+        call: CallbackQuery, *, db: AsyncSession
 ):
     count_total_worked_words = await dictionary_service.count_user_dict_words(
         user_id=call.from_user.id, db=db,
@@ -64,10 +84,11 @@ async def start_dictionary(
     )
 
 
-@router_.callback_query(AddWordToDictCallback.filter())
+@router.callback_query(AddWordToDictCallback.filter())
+@db_connect()
 async def add_word_to_dict(
         call: CallbackQuery, callback_data: AddWordToDictCallback,
-        db: AsyncSession, state: FSMContext
+        state: FSMContext, *, db: AsyncSession
 ):
     await state.clear()
     if not await UsersService(db).do_paid_action(call.from_user.id, credits=1):
@@ -85,7 +106,9 @@ async def add_word_to_dict(
     )
 
 
-async def get_message_train_word(user_id: int, state: FSMContext, db: AsyncSession, last_word: str):
+@db_connect()
+async def get_message_train_word(user_id: int, state: FSMContext, last_word: str,
+                                 *, db: AsyncSession):
     word, learning_rate = await dictionary_service.get_randow_word_to_train(
         user_id=user_id, db=db, last_word=last_word
     )
@@ -134,10 +157,12 @@ async def get_message_train_word(user_id: int, state: FSMContext, db: AsyncSessi
         )
 
 
-@router_.callback_query(TrainDictCallback.filter())
+@router.callback_query(TrainDictCallback.filter())
+@db_connect()
 async def dict_train(
-        call: CallbackQuery, db: AsyncSession,
-        state: FSMContext, callback_data: TrainDictCallback
+        call: CallbackQuery,
+        state: FSMContext, callback_data: TrainDictCallback,
+        *, db: AsyncSession
 ):
     await state.clear()
     last_word = call.message.html_text[
@@ -158,9 +183,10 @@ async def dict_train(
     )
 
 
-@router_.message(DictionaryStates.get_train_translate_word)
+@router.message(DictionaryStates.get_train_translate_word)
+@db_connect()
 async def train_get_translate_word(
-    m: Message, state: FSMContext, db: AsyncSession
+    m: Message, state: FSMContext, *, db: AsyncSession
 ):
     data = await state.get_data()
     dict_train_translate_words = data.get('dict_train_translate_words')
@@ -210,10 +236,11 @@ async def train_get_translate_word(
     )
 
 
-@router_.callback_query(SelectWordTranslationCallback.filter())
+@router.callback_query(SelectWordTranslationCallback.filter())
+@db_connect()
 async def select_word_translation(
     call: CallbackQuery, callback_data: SelectWordTranslationCallback,
-    state: FSMContext, db: AsyncSession
+    state: FSMContext, *, db: AsyncSession
 ):
     data = await state.get_data()
     dict_train_translate_words = data.get('dict_train_translate_words')
@@ -261,9 +288,10 @@ async def select_word_translation(
     )
 
 
-@router_.callback_query(MarkDictWordAsWorkedCallback.filter())
+@router.callback_query(MarkDictWordAsWorkedCallback.filter())
+@db_connect()
 async def mark_word_as_worked(
-    call: CallbackQuery, callback_data: MarkDictWordAsWorkedCallback,
+    call: CallbackQuery, callback_data: MarkDictWordAsWorkedCallback, *,
     db: AsyncSession
 ):
     await dictionary_service.mark_word_as_worked(word_id=callback_data.word_id, user_id=call.from_user.id, db=db)
@@ -280,9 +308,10 @@ async def mark_word_as_worked(
     )
 
 
-@router_.callback_query(DictWordsListCallback.filter())
+@router.callback_query(DictWordsListCallback.filter())
+@db_connect()
 async def dict_words_list(
-    call: CallbackQuery, callback_data: DictWordsListCallback, db: AsyncSession
+    call: CallbackQuery, callback_data: DictWordsListCallback, *, db: AsyncSession
 ):
     if callback_data.change_order:
         call_text = 'Слова отсортированы '

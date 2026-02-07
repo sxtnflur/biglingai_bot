@@ -5,6 +5,7 @@ from aiogram.types import Message, CallbackQuery
 from bot.keyboards.base import BaseKeyboards
 from bot.middlewares import DatabaseMiddleware
 from bot.texts.base import BaseTexts
+from bot.utils.redirect import redirect_to_screen
 from config import settings
 from depends import subs_service, ref_service
 from schemas.ref import DecodedRefInfo
@@ -32,6 +33,9 @@ async def start_ref(
             db=db
         )
         print(f'{ref_info=}')
+
+    if await redirect_to_screen(args=command.args, message=message):
+        return
 
     user = await UsersService(db).add_user_from_tguser(
         message.from_user, invited_by_id=ref_info.invited_by_id,

@@ -63,7 +63,7 @@ class SubsTexts:
         td_before_sub_end: timedelta | None = None,
         has_autopayment: bool = False
     ):
-        text = ''
+        text = '<tg-emoji emoji-id="5413879192267805083">🗓</tg-emoji> <b>Подписки</b>\n\n'
         if current_sub and td_before_sub_end and td_before_sub_end > timedelta(seconds=0):
             text += '✅ <b>Текущая подписка:</b> {}\n'.format(SubsTexts.EVERY_SUB.format(sub=current_sub))
             if has_autopayment:

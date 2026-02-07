@@ -23,16 +23,24 @@ class OpenAIService:
         self, messages: list[ChatCompletionMessageParam], model: str | None = None, **kwargs
     ):
         messages = self.add_system_message(messages)
+        model = model or self.default_model
+        if model == 'gpt-5-mini' and 'temperature' in kwargs:
+            del kwargs['temperature']
+
         return await self._client.chat.completions.create(
-            messages=messages, model=model or self.default_model, **kwargs
+            messages=messages, model=model, **kwargs
         )
 
     async def _send_completition_parse(
         self, schema: type[TSchema], messages: list[ChatCompletionMessageParam] | None = None, model: str | None = None, **kwargs
     ) -> TSchema:
         messages = self.add_system_message(messages)
+        model = model or self.default_model
+        if model == 'gpt-5-mini' and 'temperature' in kwargs:
+            del kwargs['temperature']
+
         resp = await self._client.beta.chat.completions.parse(
-            messages=messages, model=model or self.default_model, response_format=schema, **kwargs
+            messages=messages, model=model, response_format=schema, **kwargs
         )
         return resp.choices[0].message.parsed
 

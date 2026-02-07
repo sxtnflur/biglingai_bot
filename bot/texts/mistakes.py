@@ -4,6 +4,8 @@ from services.mistakes_service import MistakeSchema
 
 class MistakesTexts:
     GROUPS_IF_HAS_MISTAKES = '''
+<tg-emoji emoji-id="5420323339723881652">⚠</tg-emoji> <b>Ошибки</b>
+
 <b>Здесь хранятся твои ошибки. Чем их больше, тем лучше! Главное не забывай их отрабатывать!</b>
 {}
 <i>Чтобы посмотреть и отработать ошибки выбери одну из групп
@@ -11,6 +13,8 @@ class MistakesTexts:
 '''
 
     GROUPS_IF_NO_MISTAKES = '''
+<tg-emoji emoji-id="5420323339723881652">⚠</tg-emoji> <b>Ошибки</b>
+
 Здесь будут храниться твои ошибки, когда ты их допустишь.
 Когда-нибудь ты все равно это сделаешь, тогда и приходи сюда
 '''

@@ -1,10 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message
-from bot.keyboards.dictionary import DictionaryKeyboards
-from bot.middlewares import DatabaseMiddleware
-from bot.texts.dictionary import DictionaryTexts
-from depends import dictionary_service, translator
-from sqlalchemy.ext.asyncio import AsyncSession
+from aiogram.types import CallbackQuery
 
 
 router = Router()

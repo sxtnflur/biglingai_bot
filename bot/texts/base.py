@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from config import settings
+
 
 def td_to_text(td: timedelta) -> str:
     total_seconds = int(td.total_seconds())
@@ -18,16 +20,16 @@ def td_to_text(td: timedelta) -> str:
 
 
 class BaseTexts:
-    START = '''
+    START = f'''
 <b>Обучение:</b>
-<code>💬 Чаттинг</code> - <i>Общайся с ИИ на английском и получай обратную связь!</i>
-<code>🔴 Ошибки</code> - <i>Смотри свои допущенные ошибки и отрабатывай их на заданиях!</i>
-<code>📖 Словарь</code> - <i>Тренируй словарный запас!</i>
-<code>🔄 Переводчик</code> - <i>Переводи с ИИ!</i>
+<tg-emoji emoji-id="5443038326535759644">💬</tg-emoji> <a href="{settings.BOT_URL}?start=screen-chatting">Чаттинг</a> - <i>Общайся с ИИ на английском и получай обратную связь!</i>
+<tg-emoji emoji-id="5420323339723881652">⚠</tg-emoji> <a href="{settings.BOT_URL}?start=screen-mistakes">Ошибки</a> - <i>Смотри свои допущенные ошибки и отрабатывай их на заданиях!</i>
+<a href="{settings.BOT_URL}?start=screen-dictionary">📖 Словарь</a> - <i>Тренируй словарный запас!</i>
+<a href="{settings.BOT_URL}?start=screen-translator">🔄 Переводчик</a> - <i>Переводи с ИИ!</i>
 
 <b>Дополнительно:</b>
-<code>🕝 Подписки</code> - <i>Купи подписку и пользуйся всем функционалом бота!</i>
-<code>💰 Реф. программа</code> - <i>Получай кредиты бесплатно за приглашенных друзей!</i>
+<tg-emoji emoji-id="5413879192267805083">🗓</tg-emoji> <a href="{settings.BOT_URL}?start=screen-sub">Подписки</a> - <i>Купи подписку и пользуйся всем функционалом бота!</i>
+<tg-emoji emoji-id="5229064374403998351">🛍</tg-emoji> <a href="{settings.BOT_URL}?start=screen-ref">Реф. программа</a> - <i>Получай кредиты бесплатно за приглашенных друзей!</i>
 '''.strip()
     SUB = '<b>Подписка закончится через:</b> <code>{}</code>'
 
@@ -38,9 +40,9 @@ class BaseTexts:
     BACK = '⏪ Назад'
     CHATTING_BUTTON = '💬 Чаттинг'
     DICTIONARY_BUTTON = '📖 Словарь'
-    MY_MISTAKES_BUTTON = '🔴 Ошибки'
+    MY_MISTAKES_BUTTON = '⚠ Ошибки'
     TRANSLATOR_BUTTON = '🔄 Переводчик'
-    SUBS_BUTTON = '🕝 Подписки'
+    SUBS_BUTTON = '🗓 Подписки'
     REF_BUTTON = '💰 Реф. программа'
     MAIN_MENU_BUTTON = '▶ В главное меню'
 

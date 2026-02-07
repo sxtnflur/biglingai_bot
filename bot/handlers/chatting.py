@@ -14,7 +14,9 @@ from bot.middlewares import DatabaseMiddleware
 from bot.texts.base import BaseTexts
 from bot.texts.chatting import ChattingTexts
 from bot.keyboards.chatting import ChattingKeyboards
+from bot.utils.do_while import send_action_while_do_func
 from bot.utils.media import save_voice_as_mp3
+from database.decorator import db_connect
 from depends import langlearning_openai_service, chat_history_service
 from enums import ChattingMessageType
 from exceptions import CreditsOverException
@@ -27,12 +29,11 @@ from bot import utils
 from typing_extensions import Literal
 
 router = Router()
-router.message.middleware(DatabaseMiddleware())
-router.callback_query.middleware(DatabaseMiddleware())
 
 
 class ChattingStates(StatesGroup):
     chatting = State()
+
 
 CHAT_TYPE = f'text-chatting'
 
@@ -54,8 +55,8 @@ async def send_typing_process(chat_id: int, bot: Bot, type: ChattingMessageType)
 
 
 async def send_ai_message(
-    answer: TalkingResponse, message: Message,
-    message_type: ChattingMessageType
+        answer: TalkingResponse, message: Message,
+        message_type: ChattingMessageType
 ) -> None:
     if not answer.is_right_lang:
         await message.answer(
@@ -93,7 +94,10 @@ async def send_ai_message(
         )
 
 
-async def end_dialog(state: FSMContext, dialog_uuid: uuid.UUID | None, db: AsyncSession, message: Message, messages: list[...]):
+@db_connect()
+async def end_dialog(state: FSMContext, dialog_uuid: uuid.UUID | None,
+                     message: Message, messages: list[...],
+                     *, db: AsyncSession):
     await state.clear()
     if not dialog_uuid:
         dialog_uuid = await state.get_value('dialog_uuid')
@@ -129,7 +133,7 @@ async def end_dialog(state: FSMContext, dialog_uuid: uuid.UUID | None, db: Async
 
 @router.callback_query(F.data == 'choose_mode:chatting')
 async def start_chatting(
-    call: CallbackQuery, state: FSMContext
+        call: CallbackQuery, state: FSMContext
 ):
     await state.set_state(None)
     await call.message.edit_text(
@@ -142,9 +146,9 @@ async def start_chatting(
 
 @router.callback_query(ChangeChattingMessageTypeCallback.filter())
 async def change_chatting_message_type(
-    call: CallbackQuery,
-    callback_data: ChangeChattingMessageTypeCallback,
-    state: FSMContext
+        call: CallbackQuery,
+        callback_data: ChangeChattingMessageTypeCallback,
+        state: FSMContext
 ):
     new_val = ChattingMessageType(callback_data.type).next()
     await state.update_data(chatting_message_type=new_val)
@@ -156,8 +160,9 @@ async def change_chatting_message_type(
 
 
 @router.callback_query(F.data == 'chatting_choose_mode')
+@db_connect()
 async def chatting_choose_type(
-    call: CallbackQuery, state: FSMContext, db: AsyncSession
+        call: CallbackQuery, state: FSMContext, *, db: AsyncSession
 ):
     if not await UsersService(db).check_access_to_paid_action(call.from_user.id, credits=1):
         await call.message.edit_text(
@@ -175,9 +180,11 @@ async def chatting_choose_type(
 
 
 @router.callback_query(SelectChattingTypeCallback.filter())
+@db_connect()
 async def chatting_mode_start(
-    call: CallbackQuery, state: FSMContext, db: AsyncSession,
-    callback_data: SelectChattingTypeCallback
+        call: CallbackQuery, state: FSMContext,
+        callback_data: SelectChattingTypeCallback,
+        *, db: AsyncSession
 ):
     if not await UsersService(db).do_paid_action(call.from_user.id, credits=1):
         await call.message.answer(
@@ -198,17 +205,21 @@ async def chatting_mode_start(
     )
     voice_over = False if chatting_message_type == ChattingMessageType.text else True
 
-    await send_typing_process(call.from_user.id, call.bot, chatting_message_type)
-
-    answer = await langlearning_openai_service.send_text_talking(
-        'Hello!', theme=theme, dialog_type=dialog_type, voice_over=voice_over
+    answer = await send_action_while_do_func(
+        coroutine=langlearning_openai_service.send_text_talking(
+            'Hello!', theme=theme, dialog_type=dialog_type, voice_over=voice_over
+        ),
+        chat_id=call.message.chat.id,
+        bot=call.bot,
+        action='record_voice' if voice_over else 'typing'
     )
     try:
         await call.message.edit_text(
             text=call.message.text + '\n{}\n<i>{}</i>'.format(ChattingTexts.dialog_type_label(dialog_type), theme),
             reply_markup=None
         )
-    except: pass
+    except:
+        pass
 
     await send_ai_message(answer, call.message, message_type=chatting_message_type)
 
@@ -227,9 +238,10 @@ async def chatting_mode_start(
 
 
 @router.message(ChattingStates.chatting, F.text | F.voice)
+@db_connect()
 async def chatting(
-    message: Message, state: FSMContext,
-    db: AsyncSession
+        message: Message, state: FSMContext, *,
+        db: AsyncSession
 ):
     messages = await chat_history_service.get_history(
         user_id=message.from_user.id, chat_type=CHAT_TYPE
@@ -256,32 +268,41 @@ async def chatting(
             state=state,
             message=message,
             messages=messages,
-            db=db,
-            dialog_uuid=dialog_uuid
+            dialog_uuid=dialog_uuid,
+            db=db
         )
         return
 
     voice_over = False if chatting_message_type == ChattingMessageType.text else True
 
-    await send_typing_process(message.from_user.id, message.bot, chatting_message_type)
-
     if message.voice:
         path_to_audio = await save_voice_as_mp3(message.voice)
-        answer = await langlearning_openai_service.send_audio_talking(
-            path_to_audio=path_to_audio,
-            dialog_type=dialog_type,
-            theme=theme,
-            messages=messages,
-            voice_over=voice_over
+
+        answer = await send_action_while_do_func(
+            coroutine=langlearning_openai_service.send_audio_talking(
+                path_to_audio=path_to_audio,
+                dialog_type=dialog_type,
+                theme=theme,
+                messages=messages,
+                voice_over=voice_over
+            ),
+            chat_id=message.chat.id,
+            bot=message.bot,
+            action='record_voice' if voice_over else 'typing'
         )
         os.remove(path_to_audio)
     else:
-        answer = await langlearning_openai_service.send_text_talking(
-            message.text,
-            dialog_type=dialog_type,
-            theme=theme,
-            messages=messages,
-            voice_over=voice_over
+        answer = await send_action_while_do_func(
+            coroutine=langlearning_openai_service.send_text_talking(
+                message.text,
+                dialog_type=dialog_type,
+                theme=theme,
+                messages=messages,
+                voice_over=voice_over
+            ),
+            chat_id=message.chat.id,
+            bot=message.bot,
+            action='record_voice' if voice_over else 'typing'
         )
     await send_ai_message(answer=answer, message=message, message_type=chatting_message_type)
 
@@ -319,5 +340,9 @@ async def chatting(
 
     if answer.end_talking:
         await end_dialog(
-            state, dialog_uuid, db, message, messages
+            state=state,
+            dialog_uuid=dialog_uuid,
+            message=message,
+            messages=messages,
+            db=db
         )

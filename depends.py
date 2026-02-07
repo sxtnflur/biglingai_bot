@@ -51,7 +51,7 @@ payment_factory = PaymentFactory(yookassa=YooKassaService(
 translator = TranslatorService(
     ai_translator=OpenAIService(
         openai_client=openai_client,
-        model='openai/gpt-4.1-mini',
+        model=settings.OPENAI_MODEL,
         system_message=(
             "You are a translator from English to Russian and from Russian to English. "
             "Only translate the messages that are being sent to you and don't do anything else"
@@ -62,7 +62,7 @@ translator = TranslatorService(
 dictionary_service = DictionaryService(
     openai_service=OpenAIService(
         openai_client=openai_client,
-        model='openai/gpt-4.1-mini',
+        model=settings.OPENAI_MODEL,
         system_message=(
 '''
 Если отправленное тебе пользователем слово не на английском, верни {word: null, is_en_word: False}.

@@ -4,7 +4,7 @@ from uuid import UUID
 from aiogram import Router, F
 from aiogram.enums import ParseMode
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from bot.callbacks.mistakes import MistakesListCallback, MistakeGroupListCallback, MistakeCallback, \
     TrainMistakeGroupCallback, TrainMistakeGroupAnswerCallback, MistakesListByDialogCallback, DeleteMistakeCallback
 from bot.keyboards.mistakes import MistakesKeyboards
@@ -20,15 +20,40 @@ from ..middlewares import DatabaseMiddleware
 from ..texts.base import BaseTexts
 from ..texts.mistakes import MistakesTexts
 from depends import langlearning_openai_service
+from database.decorator import db_connect
 
 router = Router()
-router.callback_query.middleware(DatabaseMiddleware())
+
+
+@db_connect()
+async def mistakes_list(m: Message, *, db: AsyncSession):
+    groups = await MistakesService(db).get_user_mistake_groups(
+        user_id=m.from_user.id,
+        offset=0,
+        limit=10
+    )
+    count_worked_mistakes = await MistakesService(db).count_worked_out_mistakes(m.from_user.id)
+    reply_markup = MistakesKeyboards.mistake_groups_list(
+        groups=groups, limit=10, page=0
+    )
+    if groups:
+        text = MistakesTexts.groups_if_has_mistakes(
+            count_worked_mistakes=count_worked_mistakes
+        )
+    else:
+        text = MistakesTexts.GROUPS_IF_NO_MISTAKES
+
+    await m.answer(
+        text=text,
+        reply_markup=reply_markup
+    )
 
 
 @router.callback_query(MistakesListCallback.filter())
+@db_connect()
 async def mistakes_types_list_handler(
     call: CallbackQuery,
-    callback_data: MistakesListCallback,
+    callback_data: MistakesListCallback, *,
     db: AsyncSession
 ):
     groups = await MistakesService(db).get_user_mistake_groups(
@@ -55,9 +80,11 @@ async def mistakes_types_list_handler(
 
 
 @router.callback_query(MistakeGroupListCallback.filter())
+@db_connect()
 async def mistake_group(
     call: CallbackQuery,
     callback_data: MistakeGroupListCallback,
+    *,
     db: AsyncSession
 ):
     mistakes = await MistakesService(db).get_mistakes(
@@ -85,9 +112,10 @@ async def mistake_group(
 
 
 @router.callback_query(MistakeCallback.filter())
+@db_connect()
 async def get_mistake(
     call: CallbackQuery,
-    callback_data: MistakeCallback,
+    callback_data: MistakeCallback, *,
     db: AsyncSession
 ):
     mistake = await MistakesService(db).get_mistake(callback_data.id)
@@ -98,9 +126,11 @@ async def get_mistake(
 
 
 @router.callback_query(DeleteMistakeCallback.filter())
+@db_connect()
 async def delete_mistake(
     call: CallbackQuery,
     callback_data: DeleteMistakeCallback,
+    *,
     db: AsyncSession
 ):
     if callback_data.pre:
@@ -125,10 +155,12 @@ async def delete_mistake(
         )
 
 
+@db_connect()
 async def create_train_mistake_group(
-    user_id: int, db: AsyncSession,
+    user_id: int,
     by_group: str | None = None,
-    by_dialog_uuid: str | None = None
+    by_dialog_uuid: str | None = None,
+    *, db: AsyncSession | None = None
 ) -> dict:
     random_mistake = await MistakesService(db).get_random_mistake(
         user_id=user_id, by_type_key=by_group, by_dialog_uuid=by_dialog_uuid
@@ -150,8 +182,9 @@ async def create_train_mistake_group(
 
 
 @router.callback_query(TrainMistakeGroupCallback.filter())
+@db_connect()
 async def train_mistake_group(
-    call: CallbackQuery, callback_data: TrainMistakeGroupCallback,
+    call: CallbackQuery, callback_data: TrainMistakeGroupCallback, *,
     db: AsyncSession
 ):
     if not await UsersService(db).do_paid_action(user_tid=call.from_user.id, credits=1):
@@ -163,17 +196,18 @@ async def train_mistake_group(
 
     message_data = await create_train_mistake_group(
         user_id=call.from_user.id,
-        db=db,
         by_group=callback_data.group,
-        by_dialog_uuid=callback_data.dialog_uuid
+        by_dialog_uuid=callback_data.dialog_uuid,
+        db=db
     )
     await call.message.answer(**message_data)
 
 
 @router.callback_query(TrainMistakeGroupAnswerCallback.filter())
+@db_connect()
 async def train_mistake_answer(
     call: CallbackQuery,
-    callback_data: TrainMistakeGroupAnswerCallback,
+    callback_data: TrainMistakeGroupAnswerCallback, *,
     db: AsyncSession
 ):
     right_answer = None
@@ -211,8 +245,8 @@ async def train_mistake_answer(
 
     message_data = await create_train_mistake_group(
         user_id=call.from_user.id,
-        db=db,
         by_group=callback_data.group,
-        by_dialog_uuid=callback_data.dialog_uuid
+        by_dialog_uuid=callback_data.dialog_uuid,
+        db=db
     )
     await call.message.answer(**message_data)

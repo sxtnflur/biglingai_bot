@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     BOT_TOKEN: str
+    BOT_URL: str = 'https://t.me/asdsd'
     BOT_WEBHOOK_URL: str
     BOT_WEBHOOK_ENDPOINT: str
     API_PREFIX: str = '/bigling'

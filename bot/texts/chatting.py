@@ -6,7 +6,7 @@ from services.mistakes_service import MistakeSchema
 
 class ChattingTexts:
     START = '''
-💬 <b>Чаттинг</b>
+<tg-emoji emoji-id="5443038326535759644">💬</tg-emoji> <b>Чаттинг</b>
 
 <blockquote expandable>Здесь ты можешь пообщаться со мной на заготовленные темы.
 Ты должен поддерживать наш диалог.

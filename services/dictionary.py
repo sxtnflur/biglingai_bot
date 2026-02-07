@@ -72,7 +72,7 @@ class DictionaryService:
     ) -> DictionaryWord:
         existed_word: models.DictionaryWord | None = await db.scalar(
             select(models.DictionaryWord)
-            .filter(models.DictionaryWord.word == word)
+            .filter(models.DictionaryWord.word.ilike(word.lower()))
         )
         if existed_word:
             word_id = existed_word.id

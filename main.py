@@ -42,7 +42,10 @@ async def start_polling():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await onstartup(bot)
-    await bot.set_webhook(url=settings.BOT_WEBHOOK_URL, request_timeout=60)
+    allowed_updates = dp.resolve_used_update_types()
+    print(f'{allowed_updates=}')
+    await bot.set_webhook(url=settings.BOT_WEBHOOK_URL, request_timeout=60,
+                          allowed_updates=allowed_updates)
     yield
     await bot.delete_webhook()
 

@@ -235,7 +235,6 @@ async def train_mistake_group(
             reply_markup=CreditsKeyboards.go_to_credits_shop()
         )
         return
-
     poll_message: Message = await send_train_poll(
         user_id=call.from_user.id,
         bot=call.bot,

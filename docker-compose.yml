@@ -30,6 +30,7 @@ services:
       - 6379
     networks:
       - app-network
+    command: redis-server --replicaof redis-master 6379
 
 volumes:
   redis_data:

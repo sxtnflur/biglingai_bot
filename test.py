@@ -3,9 +3,10 @@ import asyncio
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database.init_db import async_session
-from depends import speacker_ai, payment_factory, logger_service, payments_service
+from depends import speacker_ai, payment_factory, logger_service, payments_service, langlearning_openai_service
 from schedulers.autopayment import AutopaymentScheduler
 from depends import dictionary_service
+from services import GrammarAIService
 from services.translator import YandexTranslator
 
 
@@ -61,6 +62,14 @@ async def translate():
     await YandexTranslator().translate()
 
 
+async def grammar():
+    # res = await GrammarAIService().process_text('today i walked around sochi city and ate very taste food')
+    res = await langlearning_openai_service.find_mistakes(
+        user_text='hello im fine. what of you?', messages=[]
+    )
+    print(f'{res=}')
+
+
 # Пример запуска:
 if __name__ == "__main__":
-    asyncio.run(speacker_ai.get_my_voices())
+    asyncio.run(grammar())

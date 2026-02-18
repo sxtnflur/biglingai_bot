@@ -3,6 +3,7 @@ import logging
 
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
+from schemas.grammar import GrammarResult
 from services.ai.elevenlabs_service import BaseAiSpeacker
 from services.ai.grammar import GrammarAIService
 from services.ai.openai_base import OpenAIService
@@ -114,13 +115,29 @@ In "end_talking" set true if the dialog should be completed.
             self, user_text: str,
             messages: list[...]
     ) -> tuple[AnswerTalkingIndications | None, str]:
-        grammar_resp = await self.grammar_ai.process_text(user_text)
 
-        print(f'{grammar_resp=}')
-        correct = grammar_resp.correct
+        openai_service = OpenAIService(
+            openai_client=self.openai,
+            system_message='''
+You are a grammar correction bot. A user will send you a text with errors. You must return the text without errors.
+'''.strip(),
+            model=self.model
+        )
+        correct = await openai_service.send_text_get_text(
+            prompt=user_text
+        )
+        errors = await self.grammar_ai.get_edits(orig=user_text, corr=correct)
+        # grammar_resp = await self.grammar_ai.process_text(user_text)
+
+        # print(f'{grammar_resp=}')
+        # correct = grammar_resp.correct
         resp_indications = await self.openai_mistakes.send_text_get_schema(
             schema=AnswerTalkingIndications,
-            prompt=grammar_resp.model_dump_json(),
+            prompt=f'''
+Original: {user_text};
+Correct: {correct};
+Mistakes: {"; ".join([err.model_dump_json() for err in errors])}
+''',
             messages=messages,
             temperature=0.3
         )

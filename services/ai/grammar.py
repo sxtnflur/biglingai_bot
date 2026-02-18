@@ -72,3 +72,9 @@ class GrammarAIService:
             original=None,
             edits=await self.get_edits(orig='', corr=corr)
         )
+
+    async def lambda_(self):
+        res = self.gr_client.predict(
+            api_name="/lambda"
+        )
+        print(f'{res=}')

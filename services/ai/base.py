@@ -126,6 +126,7 @@ You are a grammar correction bot. A user will send you a text with errors. You m
         correct = await openai_service.send_text_get_text(
             prompt=user_text
         )
+        correct = self.grammar_ai._post_process_result(correct, user_text)
         errors = await self.grammar_ai.get_edits(orig=user_text, corr=correct)
         # grammar_resp = await self.grammar_ai.process_text(user_text)
 

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from aiogram.utils.link import create_tg_link
 from pydantic import BaseModel
 
 
@@ -26,6 +27,13 @@ class User(BaseModel):
         if self.last_name:
             name.append(self.last_name)
         return ' '.join(name)
+
+    @property
+    def url(self):
+        if self.username:
+            return f'https://t.me/{self.username}'
+        else:
+            return create_tg_link("user", id=self.id)
 
     @property
     def td_before_sub_end(self) -> timedelta:

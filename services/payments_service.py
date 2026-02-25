@@ -102,7 +102,8 @@ class PaymentsService(PaymentsServiceProtocol):
             select(models.User).filter(models.User.id == payment.user_id)
         )
         await self.ref_service.on_user_paid(
-            db=db, user_tid=payment.user_id, amount=payment.amount, sub_id=payment.sub_id, bot=bot
+            db=db, current_payment_id=payment.id, user_tid=payment.user_id,
+            amount=payment.amount, sub_id=payment.sub_id, bot=bot
         )
         return SubPaymentResponse(
             sub_end=sub_end,

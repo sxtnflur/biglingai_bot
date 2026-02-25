@@ -1,9 +1,12 @@
 # grammar_corrector.py
 import asyncio
 
+import loader
+from api.routers.payment import process_pay
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database.init_db import async_session
-from depends import speacker_ai, payment_factory, logger_service, payments_service, langlearning_openai_service
+from depends import speacker_ai, payment_factory, logger_service, payments_service, langlearning_openai_service, \
+    ref_service
 from schedulers.autopayment import AutopaymentScheduler
 from depends import dictionary_service
 from services import GrammarAIService
@@ -70,6 +73,21 @@ async def grammar():
     print(f'{res=}')
 
 
+async def get_ref_info():
+    async with async_session() as session:
+        ref_info = await ref_service.get_user_ref_info(
+            db=session,
+            user_tid=1304563494,
+            bot=loader.bot
+        )
+        print(f'{ref_info=}')
+
+
+async def pay():
+    async with async_session() as db:
+        await process_pay(order_id='31313a5d-000f-5000-8000-1107df57e8e7', db=db)
+
+
 # Пример запуска:
 if __name__ == "__main__":
-    asyncio.run(grammar())
+    asyncio.run(pay())

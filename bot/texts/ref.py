@@ -32,14 +32,14 @@ class RefTexts:
 <b>Всего кредитов:</b> <code>{all_credits}</code>    
 '''
     REF_PAID_NOTIFICATION = '''
-Ваш реферал <b><a href="https://t.me/{username}">{full_name}</a></b> произвел оплату
+Ваш реферал <b><a href="{user_link}">{full_name}</a></b> произвел оплату
 
 <b>Ваша подписка увеличена на:</b> <code>{days}</code> дней
 <b>Подписка закончится:</b> <code>{sub_end}</code>
 '''
 
     REF_SPECIAL_PAID_NOTIFICATION = '''
-Ваш реферал <b><a href="https://t.me/{username}">{full_name}</a></b> произвел оплату
+Ваш реферал <b><a href="{user_link}">{full_name}</a></b> произвел оплату
 
 <b>Вы получили:</b> <code>{add_balance}</code> руб на баланс
 <b>Теперь ваш баланс составляет:</b> <code>{all_balance}</code>
@@ -110,17 +110,17 @@ class RefTexts:
         )
 
     @staticmethod
-    def ref_paid_notification(full_name: str, username: str | None, days: int, sub_end: datetime):
+    def ref_paid_notification(full_name: str, user_link: str, days: int, sub_end: datetime):
         return RefTexts.REF_PAID_NOTIFICATION.format(
-            username=username, full_name=full_name, days=days, sub_end=sub_end.strftime('%H:%M %d.%m.%Y')
+            user_link=user_link, full_name=full_name, days=days, sub_end=sub_end.strftime('%H:%M %d.%m.%Y')
         )
 
     @staticmethod
     def ref_special_ref_paid_notification(
-            full_name: str, username: str | None, add_balance: int, all_balance: int
+            full_name: str, user_link: str, add_balance: int, all_balance: int
     ):
         return RefTexts.REF_SPECIAL_PAID_NOTIFICATION.format(
-            full_name=full_name, username=username, add_balance=add_balance,
+            full_name=full_name, user_link=user_link, add_balance=add_balance,
             all_balance=all_balance
         )
 

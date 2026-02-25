@@ -61,10 +61,19 @@ class RefService:
             pass
         return DecodedRefInfo()
 
-    async def on_user_paid(self, db: AsyncSession, user_tid: int, amount: int, sub_id: int, bot: Bot) -> None:
+    async def on_user_paid(
+            self, db: AsyncSession, current_payment_id: int, user_tid: int, amount: int, sub_id: int, bot: Bot
+    ) -> None:
+        print('REF PAID')
         has_payments = await db.scalar(
-            select(exists().where(models.Payment.user_id == user_tid))
+            select(
+                exists().where(
+                    models.Payment.user_id == user_tid,
+                    models.Payment.paid_at.isnot(None),
+                    models.Payment.id != current_payment_id)
+            )
         )
+        print(f'{has_payments=}')
         if has_payments:
             return
 
@@ -80,6 +89,11 @@ class RefService:
 
         if not refferer:
             return
+
+        referred = await db.scalar(
+            select(models.User).filter(models.User.id == user_tid)
+        )
+        referred: UserSchema = UserSchema.model_validate(referred)
 
         stmt = (
             update(models.User)
@@ -117,8 +131,8 @@ class RefService:
             await bot.send_message(
                 refferer.id,
                 text=RefTexts.ref_special_ref_paid_notification(
-                    full_name=refferer.full_name,
-                    username=refferer.username,
+                    full_name=referred.full_name,
+                    user_link=referred.url,
                     add_balance=add_balance,
                     all_balance=all_balance
                 ),
@@ -133,8 +147,8 @@ class RefService:
             await bot.send_message(
                 refferer.id,
                 text=RefTexts.ref_paid_notification(
-                    full_name=refferer.full_name,
-                    username=refferer.username,
+                    full_name=referred.full_name,
+                    user_link=referred.url,
                     days=increase_days,
                     sub_end=sub_end
                 ),
@@ -146,15 +160,24 @@ class RefService:
     ) -> UserRefInfo:
         ref_link = await self.create_ref_link(user_tid, bot)
 
+        paid_exists = (
+            exists()
+            .where(models.Payment.user_id == models.User.id)
+            .correlate(models.User)  # важно для корреляции
+        )
+
         stmt_count_refs = (
             select(
-                func.count(),
-                func.count(
-                    expression=exists().where(models.Payment.user_id == models.User.id)
-                ))
-            .filter(models.User.invited_by_id == user_tid, models.User.id != user_tid)
+                func.count(models.User.id).label("count_refs"),
+                func.count(models.User.id).filter(paid_exists).label("count_paid_refs"),
+            )
+            .select_from(models.User)
+            .where(
+                models.User.invited_by_id == user_tid,
+                models.User.id != user_tid,
+            )
         )
-        count_refs, count_paid_refs = (await db.execute(stmt_count_refs)).fetchone()
+        count_refs, count_paid_refs = (await db.execute(stmt_count_refs)).one()
         user: models.User = await db.scalar(
             select(models.User)
             .options(

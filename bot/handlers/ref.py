@@ -38,7 +38,7 @@ async def ref_message(
     )
 
 
-@router.callback_query(F.data == 'ref')
+@router.callback_query(F.data.startswith('ref'))
 @db_connect()
 async def ref(
     call: CallbackQuery, *, db: AsyncSession
@@ -58,9 +58,14 @@ async def ref(
         )
         is_special = False
 
-    await call.message.edit_text(
-        text, reply_markup=RefKeyboards.main(is_special=is_special, ref_link=ref_info.ref_link)
-    )
+    if call.data.endswith('savemsg'):
+        await call.message.answer(
+            text, reply_markup=RefKeyboards.main(is_special=is_special, ref_link=ref_info.ref_link)
+        )
+    else:
+        await call.message.edit_text(
+            text, reply_markup=RefKeyboards.main(is_special=is_special, ref_link=ref_info.ref_link)
+        )
 
 
 @router.callback_query(F.data == 'about-special-ref')

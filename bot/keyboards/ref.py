@@ -31,7 +31,7 @@ class RefKeyboards:
     def on_ref_event():
         return InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(
-                text=RefTexts.ALL_STATISTIC_BUTTON, callback_data='ref'
+                text=RefTexts.ALL_STATISTIC_BUTTON, callback_data='ref-savemsg'
             )],
             [InlineKeyboardButton(
                 text=RefTexts.DELETE_THIS_MESSAGE, callback_data='delete-this-message'

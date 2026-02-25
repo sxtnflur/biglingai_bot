@@ -1,6 +1,7 @@
 import datetime
 from contextlib import asynccontextmanager
 
+import loader
 from aiogram import Bot
 from bot.keyboards.base import BaseKeyboards
 from bot.texts.base import BaseTexts, td_to_text
@@ -45,7 +46,7 @@ async def process_pay(
         save_payment_method_id: str | None = None,
         payment_method_title: str | None = None
 ):
-    bot = Bot(token=settings.BOT_TOKEN)
+    bot = loader.bot
     payment = await payments_service.mark_as_paid(
         db=db, bot=bot, order_id=order_id
     )
